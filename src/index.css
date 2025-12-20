@@ -1,96 +1,116 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
-
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Warm watercolor paper palette */
+    --background: 40 33% 97%;
+    --foreground: 30 10% 20%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 40 40% 98%;
+    --card-foreground: 30 10% 20%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 40 40% 98%;
+    --popover-foreground: 30 10% 20%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Ink/charcoal primary */
+    --primary: 30 8% 25%;
+    --primary-foreground: 40 33% 97%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Sage green secondary */
+    --secondary: 140 20% 92%;
+    --secondary-foreground: 140 25% 30%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Muted cream tones */
+    --muted: 35 25% 93%;
+    --muted-foreground: 30 10% 45%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Terracotta accent */
+    --accent: 15 55% 88%;
+    --accent-foreground: 15 50% 35%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    /* Priority colors */
+    --urgent: 0 65% 55%;
+    --high: 25 75% 55%;
+    --medium: 45 70% 50%;
+    --low: 140 30% 50%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    /* Status colors */
+    --todo: 35 25% 80%;
+    --doing: 200 50% 75%;
+    --done: 140 35% 70%;
+
+    --destructive: 0 60% 50%;
+    --destructive-foreground: 40 33% 97%;
+
+    /* Ink-like borders */
+    --border: 35 15% 80%;
+    --input: 35 20% 88%;
+    --ring: 30 8% 25%;
 
     --radius: 0.5rem;
 
-    --sidebar-background: 0 0% 98%;
+    /* Botanical decorative colors */
+    --botanical-green: 140 30% 45%;
+    --botanical-rose: 350 40% 65%;
+    --botanical-lavender: 260 30% 65%;
+    --botanical-terracotta: 15 55% 55%;
 
-    --sidebar-foreground: 240 5.3% 26.1%;
+    /* Chat colors */
+    --chat-user: 35 30% 94%;
+    --chat-assistant: 40 40% 98%;
 
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Sidebar (if needed) */
+    --sidebar-background: 40 33% 96%;
+    --sidebar-foreground: 30 10% 25%;
+    --sidebar-primary: 30 8% 25%;
+    --sidebar-primary-foreground: 40 33% 97%;
+    --sidebar-accent: 140 20% 92%;
+    --sidebar-accent-foreground: 140 25% 30%;
+    --sidebar-border: 35 15% 85%;
+    --sidebar-ring: 30 8% 25%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 30 15% 10%;
+    --foreground: 40 20% 90%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 30 12% 14%;
+    --card-foreground: 40 20% 90%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 30 12% 14%;
+    --popover-foreground: 40 20% 90%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 40 25% 85%;
+    --primary-foreground: 30 15% 10%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 140 15% 20%;
+    --secondary-foreground: 140 20% 75%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 30 10% 20%;
+    --muted-foreground: 35 15% 60%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 15 40% 25%;
+    --accent-foreground: 15 45% 80%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 55% 45%;
+    --destructive-foreground: 40 20% 90%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --border: 30 10% 25%;
+    --input: 30 10% 25%;
+    --ring: 40 25% 85%;
+
+    --sidebar-background: 30 12% 12%;
+    --sidebar-foreground: 40 20% 90%;
+    --sidebar-primary: 40 25% 85%;
+    --sidebar-primary-foreground: 30 15% 10%;
+    --sidebar-accent: 140 15% 20%;
+    --sidebar-accent-foreground: 140 20% 75%;
+    --sidebar-border: 30 10% 22%;
+    --sidebar-ring: 40 25% 85%;
   }
 }
 
@@ -99,7 +119,164 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: "kern" 1, "liga" 1;
+  }
+}
+
+@layer components {
+  /* Watercolor paper texture overlay */
+  .paper-texture {
+    background-image: 
+      radial-gradient(ellipse at 20% 30%, hsl(40 30% 95% / 0.4) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 70%, hsl(35 25% 93% / 0.3) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 50%, hsl(40 20% 96% / 0.2) 0%, transparent 70%);
+  }
+
+  /* Ink-style borders */
+  .ink-border {
+    @apply border border-border/60;
+    border-width: 1px;
+  }
+
+  .ink-border-strong {
+    @apply border border-foreground/20;
+  }
+
+  /* Elegant card styling */
+  .card-botanical {
+    @apply bg-card rounded-lg ink-border shadow-sm;
+    box-shadow: 
+      0 1px 3px hsl(30 10% 20% / 0.04),
+      0 4px 12px hsl(30 10% 20% / 0.03);
+  }
+
+  /* Priority badges */
+  .priority-urgent {
+    @apply bg-[hsl(var(--urgent)/0.15)] text-[hsl(var(--urgent))] border-[hsl(var(--urgent)/0.3)];
+  }
+  .priority-high {
+    @apply bg-[hsl(var(--high)/0.15)] text-[hsl(var(--high))] border-[hsl(var(--high)/0.3)];
+  }
+  .priority-medium {
+    @apply bg-[hsl(var(--medium)/0.15)] text-[hsl(var(--medium))] border-[hsl(var(--medium)/0.3)];
+  }
+  .priority-low {
+    @apply bg-[hsl(var(--low)/0.15)] text-[hsl(var(--low))] border-[hsl(var(--low)/0.3)];
+  }
+
+  /* Status badges */
+  .status-todo {
+    @apply bg-[hsl(var(--todo))] text-foreground/80;
+  }
+  .status-doing {
+    @apply bg-[hsl(var(--doing))] text-foreground/90;
+  }
+  .status-done {
+    @apply bg-[hsl(var(--done))] text-foreground/80;
+  }
+
+  /* Microseason strip */
+  .microseason-strip {
+    @apply py-4 px-6 border-b border-border/40;
+    background: linear-gradient(
+      180deg,
+      hsl(40 35% 97%) 0%,
+      hsl(40 30% 96%) 100%
+    );
+  }
+
+  /* Chat message bubbles */
+  .chat-user {
+    @apply bg-[hsl(var(--chat-user))] rounded-2xl rounded-br-md;
+  }
+  .chat-assistant {
+    @apply bg-[hsl(var(--chat-assistant))] rounded-2xl rounded-bl-md ink-border;
+  }
+
+  /* Quick prompt buttons */
+  .quick-prompt {
+    @apply px-3 py-1.5 rounded-full text-sm font-sans;
+    @apply bg-secondary text-secondary-foreground;
+    @apply hover:bg-secondary/80 transition-colors duration-200;
+    @apply border border-border/50;
+  }
+
+  /* Botanical decorative element */
+  .botanical-accent {
+    @apply opacity-30 pointer-events-none select-none;
+  }
+}
+
+@layer utilities {
+  /* Typography */
+  .font-serif-display {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+  }
+
+  .font-sans {
+    font-family: 'DM Sans', system-ui, sans-serif;
+  }
+
+  /* Subtle animations */
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out forwards;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.4s ease-out forwards;
+  }
+
+  .animate-gentle-pulse {
+    animation: gentlePulse 2s ease-in-out infinite;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes slideUp {
+    from { 
+      opacity: 0; 
+      transform: translateY(8px); 
+    }
+    to { 
+      opacity: 1; 
+      transform: translateY(0); 
+    }
+  }
+
+  @keyframes gentlePulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+
+  /* Scroll styling */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 3px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.3);
   }
 }
