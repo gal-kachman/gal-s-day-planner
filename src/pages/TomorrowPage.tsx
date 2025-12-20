@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { MicroseasonHeader } from '@/components/MicroseasonHeader';
 import { TasksCard } from '@/components/TasksCard';
@@ -8,9 +7,8 @@ import { ChatPanel } from '@/components/ChatPanel';
 import botanicalFooter from '@/assets/botanical-footer.png';
 import { Task, TaskStatus, TaskPriority, CalendarEvent } from '@/types';
 import { mockMicroseason, quickPrompts } from '@/data/mockData';
-import { useAuth } from '@/hooks/useAuth';
 import { useGoogleData } from '@/hooks/useGoogleData';
-import { Loader2, LogOut, RefreshCw } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 
@@ -22,25 +20,15 @@ const GOOGLE_CONFIG = {
 };
 
 export default function TomorrowPage() {
-  const { user, loading: authLoading, signOut } = useAuth();
-  const navigate = useNavigate();
   const { loading: dataLoading, error, events: googleEvents, tasks: googleTasks, fetchData } = useGoogleData();
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate('/auth', { replace: true });
-    }
-  }, [user, authLoading, navigate]);
-
   // Fetch Google data on mount
   useEffect(() => {
-    if (user) {
-      fetchData(GOOGLE_CONFIG, 'all');
-    }
-  }, [user, fetchData]);
+    fetchData(GOOGLE_CONFIG, 'all');
+  }, [fetchData]);
 
   // Sync Google data to local state
   useEffect(() => {
@@ -98,18 +86,6 @@ export default function TomorrowPage() {
     };
     setTasks((prev) => [...prev, newTask]);
   };
-
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-background paper-texture flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  if (!user) {
-    return null;
-  }
 
   return (
     <>
@@ -175,19 +151,10 @@ export default function TomorrowPage() {
               alt=""
               className="w-full h-24 object-cover opacity-40 pointer-events-none"
             />
-            <div className="absolute inset-0 flex items-center justify-center gap-4">
+            <div className="absolute inset-0 flex items-center justify-center">
               <p className="text-xs text-muted-foreground font-serif italic bg-background/60 px-4 py-1 rounded-full">
                 Chief of Staff · Your AI planning companion
               </p>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={signOut}
-                className="h-7 text-xs text-muted-foreground hover:text-foreground bg-background/60"
-              >
-                <LogOut className="w-3 h-3 mr-1" />
-                Sign out
-              </Button>
             </div>
           </div>
         </footer>
