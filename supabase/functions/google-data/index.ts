@@ -162,22 +162,40 @@ async function fetchSheetTasks(accessToken: string, spreadsheetId: string, range
   console.log(`Found ${rows.length} rows in sheet`);
   
   // Skip header row if present and map to tasks
-  // Expected columns: Title, Notes, Status, Priority, EstimatedMinutes, DueDate, Tags
+  // Detected columns: Index, Notes, Status, Quadrant, Priority
   if (rows.length <= 1) {
     return [];
   }
   
-  return rows.slice(1).map((row: string[], index: number) => ({
-    id: `sheet-${index + 1}`,
-    title: row[0] || 'Untitled Task',
-    notes: row[1] || undefined,
-    status: (row[2]?.toLowerCase() || 'todo') as 'todo' | 'doing' | 'done',
-    priority: (row[3]?.toLowerCase() || 'medium') as 'low' | 'medium' | 'high' | 'urgent',
-    estimatedMinutes: row[4] ? parseInt(row[4], 10) : undefined,
-    dueDate: row[5] || undefined,
-    tags: row[6] ? row[6].split(',').map((t: string) => t.trim()) : undefined,
-    createdAt: new Date().toISOString(),
-  }));
+  return rows.slice(1).map((row: string[], index: number) => {
+    const statusRaw = row[2]?.toLowerCase() || '';
+    let status: 'todo' | 'doing' | 'done' = 'todo';
+    if (statusRaw === 'done' || statusRaw === 'completed') {
+      status = 'done';
+    } else if (statusRaw === 'doing' || statusRaw === 'in progress') {
+      status = 'doing';
+    }
+    
+    const priorityRaw = row[4]?.toLowerCase() || 'medium';
+    let priority: 'low' | 'medium' | 'high' | 'urgent' = 'medium';
+    if (priorityRaw === 'high' || priorityRaw === 'urgent') {
+      priority = 'high';
+    } else if (priorityRaw === 'low') {
+      priority = 'low';
+    }
+    
+    return {
+      id: `sheet-${index + 1}`,
+      title: row[1] || 'Untitled Task', // Notes column as title
+      notes: undefined,
+      status,
+      priority,
+      estimatedMinutes: undefined,
+      dueDate: row[3] || undefined, // Quadrant column
+      tags: row[4] ? [row[4]] : undefined, // Priority as tag
+      createdAt: new Date().toISOString(),
+    };
+  });
 }
 
 serve(async (req) => {
@@ -230,7 +248,7 @@ serve(async (req) => {
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-      result.tasks = await fetchSheetTasks(accessToken, spreadsheetId, sheetRange || 'Tasks!A:G');
+      result.tasks = await fetchSheetTasks(accessToken, spreadsheetId, sheetRange || 'Sheet1!A:E');
     }
 
     console.log('Returning data successfully');
