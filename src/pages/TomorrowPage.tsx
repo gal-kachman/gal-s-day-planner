@@ -53,10 +53,10 @@ export default function TomorrowPage() {
 
         {/* Main content */}
         <main className="container mx-auto max-w-7xl px-4 py-6">
-          {/* Desktop: 3-column layout / Mobile: stacked */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* Top row: Tasks + Events side by side */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Tasks Card */}
-            <div className="lg:col-span-4 min-h-[400px] lg:min-h-[600px]">
+            <div className="min-h-[400px]">
               <TasksCard
                 tasks={tasks}
                 onStatusChange={handleStatusChange}
@@ -67,18 +67,18 @@ export default function TomorrowPage() {
             </div>
 
             {/* Events Card */}
-            <div className="lg:col-span-4 min-h-[400px] lg:min-h-[600px]">
+            <div className="min-h-[400px]">
               <EventsCard events={mockEvents} />
             </div>
+          </div>
 
-            {/* Chat Panel */}
-            <div className="lg:col-span-4 min-h-[400px] lg:min-h-[600px]">
-              <ChatPanel
-                tasks={tasks}
-                events={mockEvents}
-                quickPrompts={quickPrompts}
-              />
-            </div>
+          {/* Chat Panel below */}
+          <div className="mt-6 min-h-[350px]">
+            <ChatPanel
+              tasks={tasks}
+              events={mockEvents}
+              quickPrompts={quickPrompts}
+            />
           </div>
         </main>
 
