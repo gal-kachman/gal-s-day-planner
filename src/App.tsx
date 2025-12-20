@@ -11,6 +11,7 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+// App component with auth provider wrapping all routes
 const App = () => (
   <HelmetProvider>
     <QueryClientProvider client={queryClient}>
