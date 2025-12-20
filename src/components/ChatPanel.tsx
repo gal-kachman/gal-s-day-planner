@@ -107,17 +107,36 @@ function generateAIResponse(
 }
 
 export function ChatPanel({ tasks, events, quickPrompts }: ChatPanelProps) {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: 'welcome',
-      role: 'assistant',
-      content: `Good evening, Gal! I'm your Chief of Staff. I'm here to help you plan tomorrow.\n\nI can see your **${tasks.filter((t) => t.status !== 'done').length} active tasks** and **${events.length} calendar events** for tomorrow. What would you like to work on?`,
-      timestamp: new Date(),
-    },
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [hasInitialized, setHasInitialized] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Update welcome message when data loads
+  useEffect(() => {
+    const activeTasks = tasks.filter((t) => t.status !== 'done').length;
+    const eventCount = events.length;
+    
+    // Only update once we have data or after initial load
+    if (!hasInitialized && (activeTasks > 0 || eventCount > 0)) {
+      setMessages([{
+        id: 'welcome',
+        role: 'assistant',
+        content: `Good evening, Gal! I'm your Chief of Staff. I'm here to help you plan tomorrow.\n\nI can see your **${activeTasks} active tasks** and **${eventCount} calendar events** for tomorrow. What would you like to work on?`,
+        timestamp: new Date(),
+      }]);
+      setHasInitialized(true);
+    } else if (!hasInitialized && messages.length === 0) {
+      // Show loading state initially
+      setMessages([{
+        id: 'welcome',
+        role: 'assistant',
+        content: `Good evening, Gal! I'm your Chief of Staff. Loading your tasks and calendar...`,
+        timestamp: new Date(),
+      }]);
+    }
+  }, [tasks, events, hasInitialized, messages.length]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
