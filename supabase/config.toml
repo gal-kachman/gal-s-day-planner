@@ -1,1 +1,4 @@
 project_id = "oltleppgnjmxggentltm"
+
+[functions.google-data]
+verify_jwt = false
