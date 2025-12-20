@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { MicroseasonHeader } from '@/components/MicroseasonHeader';
 import { TasksCard } from '@/components/TasksCard';
@@ -7,8 +8,20 @@ import { ChatPanel } from '@/components/ChatPanel';
 import botanicalFooter from '@/assets/botanical-footer.png';
 import { Task, TaskStatus, TaskPriority } from '@/types';
 import { mockTasks, mockEvents, mockMicroseason, quickPrompts } from '@/data/mockData';
+import { useAuth } from '@/hooks/useAuth';
+import { Loader2, LogOut } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export default function TomorrowPage() {
+  const { user, loading, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/auth', { replace: true });
+    }
+  }, [user, loading, navigate]);
+  
   const [tasks, setTasks] = useState<Task[]>(mockTasks);
 
   const handleStatusChange = (taskId: string, status: TaskStatus) => {
@@ -39,6 +52,18 @@ export default function TomorrowPage() {
     };
     setTasks((prev) => [...prev, newTask]);
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background paper-texture flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <>
@@ -90,10 +115,19 @@ export default function TomorrowPage() {
               alt=""
               className="w-full h-24 object-cover opacity-40 pointer-events-none"
             />
-            <div className="absolute inset-0 flex items-center justify-center">
+            <div className="absolute inset-0 flex items-center justify-center gap-4">
               <p className="text-xs text-muted-foreground font-serif italic bg-background/60 px-4 py-1 rounded-full">
                 Chief of Staff · Your AI planning companion
               </p>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={signOut}
+                className="h-7 text-xs text-muted-foreground hover:text-foreground bg-background/60"
+              >
+                <LogOut className="w-3 h-3 mr-1" />
+                Sign out
+              </Button>
             </div>
           </div>
         </footer>
