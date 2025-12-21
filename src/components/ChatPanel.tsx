@@ -156,7 +156,8 @@ export function ChatPanel({ tasks, events, quickPrompts }: ChatPanelProps) {
       timestamp: new Date(),
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    const updatedMessages = [...messages, userMessage];
+    setMessages(updatedMessages);
     setInput('');
     setIsTyping(true);
 
@@ -170,7 +171,7 @@ export function ChatPanel({ tasks, events, quickPrompts }: ChatPanelProps) {
             'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
           body: JSON.stringify({
-            message: text.trim(),
+            messages: updatedMessages,
             tasks,
             events,
           }),
