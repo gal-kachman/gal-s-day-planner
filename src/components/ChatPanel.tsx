@@ -160,20 +160,50 @@ export function ChatPanel({ tasks, events, quickPrompts }: ChatPanelProps) {
     setInput('');
     setIsTyping(true);
 
-    // Simulate AI thinking delay
-    await new Promise((resolve) => setTimeout(resolve, 800 + Math.random() * 700));
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/planning-chat`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({
+            message: text.trim(),
+            tasks,
+            events,
+          }),
+        }
+      );
 
-    const response = generateAIResponse(text, tasks, events);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to get AI response');
+      }
 
-    const assistantMessage: ChatMessage = {
-      id: (Date.now() + 1).toString(),
-      role: 'assistant',
-      content: response.content,
-      timestamp: new Date(),
-    };
+      const data = await response.json();
+      
+      const assistantMessage: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: data.response,
+        timestamp: new Date(),
+      };
 
-    setMessages((prev) => [...prev, assistantMessage]);
-    setIsTyping(false);
+      setMessages((prev) => [...prev, assistantMessage]);
+    } catch (error) {
+      console.error('AI chat error:', error);
+      const errorMessage: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: "I'm sorry, I encountered an issue. Please try again.",
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
+      setIsTyping(false);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
