@@ -2,3 +2,6 @@ project_id = "oltleppgnjmxggentltm"
 
 [functions.google-data]
 verify_jwt = false
+
+[functions.planning-chat]
+verify_jwt = false
