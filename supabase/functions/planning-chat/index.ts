@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { message, tasks, events } = await req.json();
+    const { messages: chatHistory, tasks, events } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
@@ -46,7 +46,15 @@ Your role:
 
 Keep responses focused and under 200 words unless more detail is requested.`;
 
-    console.log('Sending request to Lovable AI...');
+    // Convert chat history to API format (exclude welcome message)
+    const conversationMessages = chatHistory
+      .filter((m: any) => m.id !== 'welcome')
+      .map((m: any) => ({
+        role: m.role,
+        content: m.content,
+      }));
+
+    console.log('Sending request to Lovable AI with', conversationMessages.length, 'messages in history');
     
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -58,7 +66,7 @@ Keep responses focused and under 200 words unless more detail is requested.`;
         model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: message },
+          ...conversationMessages,
         ],
       }),
     });
