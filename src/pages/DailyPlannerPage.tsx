@@ -1,5 +1,7 @@
 import { Helmet } from 'react-helmet-async';
 import { useState } from 'react';
+import { format } from 'date-fns';
+import { he } from 'date-fns/locale';
 import plannerBg from '@/assets/planner-bg-minimal.jpeg';
 
 const timeSlots = [
@@ -27,9 +29,14 @@ export default function DailyPlannerPage() {
         style={{ backgroundImage: `url(${plannerBg})` }}
       >
         {/* Header */}
-        <h1 className="text-2xl font-serif text-stone-800 text-center mb-8 tracking-wide">
-          תכנון יומי
-        </h1>
+        <div className="text-center mb-8">
+          <h1 className="text-2xl font-serif text-stone-800 tracking-wide">
+            תכנון יומי
+          </h1>
+          <p className="text-sm text-stone-600 mt-1">
+            {format(new Date(), 'EEEE, d בMMMM yyyy', { locale: he })}
+          </p>
+        </div>
 
         <div className="grid grid-cols-2 gap-12 h-[calc(100vh-12rem)]">
             {/* Left Column - Schedule */}
