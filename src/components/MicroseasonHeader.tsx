@@ -20,7 +20,7 @@ export function MicroseasonHeader({ microseason }: MicroseasonHeaderProps) {
           {/* Date */}
           <div className="text-center sm:text-left">
             <p className="text-sm font-medium text-muted-foreground tracking-wide uppercase">
-              Tomorrow
+              מחר
             </p>
             <p className="font-serif text-lg text-foreground">
               {microseason.date}

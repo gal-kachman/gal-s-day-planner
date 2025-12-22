@@ -12,10 +12,10 @@ interface TasksCardProps {
 }
 
 const priorityConfig: Record<TaskPriority, { label: string; className: string; dotColor: string }> = {
-  urgent: { label: 'Urgent', className: 'priority-urgent', dotColor: 'bg-priority-urgent' },
-  high: { label: 'High', className: 'priority-high', dotColor: 'bg-priority-high' },
-  medium: { label: 'Medium', className: 'priority-medium', dotColor: 'bg-priority-medium' },
-  low: { label: 'Low', className: 'priority-low', dotColor: 'bg-priority-low' },
+  urgent: { label: 'דחוף', className: 'priority-urgent', dotColor: 'bg-priority-urgent' },
+  high: { label: 'גבוה', className: 'priority-high', dotColor: 'bg-priority-high' },
+  medium: { label: 'בינוני', className: 'priority-medium', dotColor: 'bg-priority-medium' },
+  low: { label: 'נמוך', className: 'priority-low', dotColor: 'bg-priority-low' },
 };
 
 const statusIcons: Record<TaskStatus, React.ReactNode> = {
@@ -80,10 +80,10 @@ export function TasksCard({
       <div className="p-4 border-b border-border/50">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-serif text-xl font-medium text-foreground">
-            My Tasks
+            המשימות שלי
           </h2>
           <span className="text-sm text-muted-foreground">
-            {filteredTasks.length} active
+            {filteredTasks.length} פעילות
           </span>
         </div>
 
@@ -92,7 +92,7 @@ export function TasksCard({
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Search tasks..."
+            placeholder="חיפוש משימות..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-4 py-2 text-sm bg-muted/50 border border-border/50 rounded-lg 
@@ -171,7 +171,7 @@ export function TasksCard({
                                    bg-muted/50 rounded-full hover:bg-muted transition-colors"
                       >
                         <Clock className="w-3 h-3" />
-                        {task.estimatedMinutes ? `${task.estimatedMinutes}m` : 'Add time'}
+                        {task.estimatedMinutes ? `${task.estimatedMinutes} דק׳` : 'הוסף זמן'}
                       </button>
                     )}
 
@@ -193,7 +193,7 @@ export function TasksCard({
 
         {filteredTasks.length === 0 && (
           <div className="py-8 text-center text-muted-foreground text-sm">
-            {searchQuery ? 'No tasks match your search' : 'All tasks completed!'}
+            {searchQuery ? 'לא נמצאו משימות' : 'כל המשימות הושלמו!'}
           </div>
         )}
       </div>
@@ -206,7 +206,7 @@ export function TasksCard({
             type="text"
             value={newTaskTitle}
             onChange={(e) => setNewTaskTitle(e.target.value)}
-            placeholder="Add a new task..."
+            placeholder="הוסף משימה חדשה..."
             className="flex-1 text-sm bg-transparent placeholder:text-muted-foreground 
                        focus:outline-none"
           />

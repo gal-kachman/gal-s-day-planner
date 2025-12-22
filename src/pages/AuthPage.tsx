@@ -22,7 +22,7 @@ export default function AuthPage() {
     const { error } = await signInWithGoogle();
     if (error) {
       toast({
-        title: 'Sign in failed',
+        title: 'ההתחברות נכשלה',
         description: error.message,
         variant: 'destructive',
       });
@@ -40,8 +40,8 @@ export default function AuthPage() {
   return (
     <>
       <Helmet>
-        <title>Sign In | Chief of Staff</title>
-        <meta name="description" content="Sign in to Chief of Staff to connect your Google Calendar and Sheets for AI-powered daily planning." />
+        <title>התחברות | אטלס</title>
+        <meta name="description" content="התחבר לאטלס כדי לחבר את יומן Google והגיליונות שלך לתכנון יומי חכם." />
       </Helmet>
 
       <div className="min-h-screen bg-background paper-texture flex flex-col items-center justify-center px-4 relative overflow-hidden">
@@ -61,10 +61,10 @@ export default function AuthPage() {
           {/* Header */}
           <div className="text-center mb-10">
             <h1 className="font-serif-display text-4xl md:text-5xl font-light text-foreground mb-3 tracking-wide">
-              Chief of Staff
+              אטלס
             </h1>
             <p className="text-muted-foreground font-sans text-base">
-              Your AI-powered daily planning companion
+              העוזר האישי שלך לתכנון יומי
             </p>
           </div>
 
@@ -72,10 +72,10 @@ export default function AuthPage() {
           <div className="card-botanical p-8 md:p-10">
             <div className="text-center mb-8">
               <h2 className="font-serif-display text-2xl font-normal text-foreground mb-2">
-                Welcome, Gal
+                שלום
               </h2>
               <p className="text-muted-foreground text-sm font-sans">
-                Connect your Google account to sync your calendar and tasks
+                חבר את חשבון Google שלך לסנכרון היומן והמשימות
               </p>
             </div>
 
@@ -101,17 +101,17 @@ export default function AuthPage() {
                   d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                 />
               </svg>
-              Continue with Google
+              המשך עם Google
             </Button>
 
             <p className="text-xs text-muted-foreground text-center mt-6 font-sans leading-relaxed">
-              We'll request access to your Google Calendar (read-only) and Google Sheets to sync your tasks and events.
+              נבקש גישה ליומן Google שלך (קריאה בלבד) ול-Google Sheets לסנכרון המשימות והאירועים.
             </p>
           </div>
 
           {/* Footer note */}
           <p className="text-center text-xs text-muted-foreground mt-8 font-serif-display italic">
-            "East wind melts the ice"
+            "רוח מזרחית ממיסה את הקרח"
           </p>
         </div>
       </div>
