@@ -7,10 +7,10 @@ interface EventsCardProps {
 }
 
 function formatTime(isoString: string): string {
-  return new Date(isoString).toLocaleTimeString('en-US', {
+  return new Date(isoString).toLocaleTimeString('he-IL', {
     hour: 'numeric',
     minute: '2-digit',
-    hour12: true,
+    hour12: false,
   });
 }
 
@@ -35,10 +35,10 @@ export function EventsCard({ events }: EventsCardProps) {
       <div className="p-4 border-b border-border/50">
         <div className="flex items-center justify-between">
           <h2 className="font-serif text-xl font-medium text-foreground">
-            Tomorrow's Schedule
+            לוח הזמנים של מחר
           </h2>
           <span className="text-sm text-muted-foreground">
-            {events.length} events
+            {events.length} אירועים
           </span>
         </div>
       </div>
@@ -49,7 +49,7 @@ export function EventsCard({ events }: EventsCardProps) {
         {allDayEvents.length > 0 && (
           <div className="mb-4">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
-              All Day
+              כל היום
             </p>
             <div className="space-y-2">
               {allDayEvents.map((event) => (
@@ -96,7 +96,7 @@ export function EventsCard({ events }: EventsCardProps) {
                     <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
                       <Clock className="w-3.5 h-3.5" />
                       <span>{formatTimeRange(event.startTime, event.endTime)}</span>
-                      <span className="text-xs opacity-70">({duration}m)</span>
+                      <span className="text-xs opacity-70">({duration} דק׳)</span>
                     </div>
 
                     {/* Event card */}
@@ -132,7 +132,7 @@ export function EventsCard({ events }: EventsCardProps) {
 
         {events.length === 0 && (
           <div className="py-8 text-center text-muted-foreground text-sm">
-            No events scheduled for tomorrow
+            אין אירועים מתוכננים למחר
           </div>
         )}
       </div>

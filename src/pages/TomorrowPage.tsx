@@ -47,7 +47,7 @@ export default function TomorrowPage() {
   useEffect(() => {
     if (error) {
       toast({
-        title: 'Failed to load data',
+        title: 'טעינת הנתונים נכשלה',
         description: error,
         variant: 'destructive',
       });
@@ -90,8 +90,8 @@ export default function TomorrowPage() {
   return (
     <>
       <Helmet>
-        <title>Tomorrow | Chief of Staff</title>
-        <meta name="description" content="Plan your tomorrow with AI-powered scheduling assistance. View tasks, calendar events, and get personalized productivity recommendations." />
+        <title>מחר | אטלס</title>
+        <meta name="description" content="תכנן את המחר שלך עם עזרה של בינה מלאכותית. צפה במשימות, אירועי יומן וקבל המלצות פרודוקטיביות מותאמות אישית." />
       </Helmet>
 
       <div className="min-h-screen bg-background paper-texture">
@@ -109,8 +109,8 @@ export default function TomorrowPage() {
               disabled={dataLoading}
               className="text-muted-foreground hover:text-foreground"
             >
-              <RefreshCw className={`w-4 h-4 mr-2 ${dataLoading ? 'animate-spin' : ''}`} />
-              {dataLoading ? 'Syncing...' : 'Sync with Google'}
+              <RefreshCw className={`w-4 h-4 ml-2 ${dataLoading ? 'animate-spin' : ''}`} />
+              {dataLoading ? 'מסנכרן...' : 'סנכרן עם Google'}
             </Button>
           </div>
 
@@ -153,7 +153,7 @@ export default function TomorrowPage() {
             />
             <div className="absolute inset-0 flex items-center justify-center">
               <p className="text-xs text-muted-foreground font-serif italic bg-background/60 px-4 py-1 rounded-full">
-                Chief of Staff · Your AI planning companion
+                אטלס · העוזר האישי שלך לתכנון יומי
               </p>
             </div>
           </div>
