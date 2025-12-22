@@ -10,16 +10,10 @@ const timeSlots = [
 
 export default function DailyPlannerPage() {
   const [schedule, setSchedule] = useState<string[]>(Array(timeSlots.length).fill(''));
-  const [duties, setDuties] = useState<string[]>(Array(6).fill(''));
+  const [duties, setDuties] = useState<string[]>(Array(8).fill(''));
   const [workTasks, setWorkTasks] = useState<{ text: string; done: boolean }[]>(
-    Array(6).fill(null).map(() => ({ text: '', done: false }))
+    Array(8).fill(null).map(() => ({ text: '', done: false }))
   );
-  const [notes, setNotes] = useState('');
-  const [water, setWater] = useState<boolean[]>(Array(8).fill(false));
-  const [breakfast, setBreakfast] = useState('');
-  const [lunch, setLunch] = useState('');
-  const [dinner, setDinner] = useState('');
-  const [exercise, setExercise] = useState('');
 
   return (
     <>
@@ -28,9 +22,9 @@ export default function DailyPlannerPage() {
         <meta name="description" content="תכנן את היום שלך עם אטלס" />
       </Helmet>
 
-      <div className="min-h-screen w-full bg-stone-100 flex items-center justify-center p-4 md:p-8">
+      <div className="h-screen w-full bg-stone-100 flex items-center justify-center p-4">
         <div 
-          className="w-full max-w-2xl bg-contain bg-center bg-no-repeat p-10 md:p-14 aspect-[3/4]"
+          className="h-full max-h-[95vh] aspect-[3/4] bg-no-repeat p-8 md:p-12"
           style={{ backgroundImage: `url(${plannerBg})`, backgroundSize: '100% 100%' }}
         >
           {/* Header */}
@@ -38,14 +32,14 @@ export default function DailyPlannerPage() {
             תכנון יומי
           </h1>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-2 gap-8 h-[calc(100%-4rem)]">
             {/* Left Column - Schedule */}
-            <div className="space-y-6">
-              <section>
+            <div>
+              <section className="h-full flex flex-col">
                 <h2 className="text-sm font-medium text-stone-600 mb-3 tracking-wider uppercase">
                   לוח זמנים
                 </h2>
-                <div className="space-y-1">
+                <div className="flex-1 flex flex-col justify-between">
                   {timeSlots.map((time, i) => (
                     <div key={i} className="flex items-center gap-3 group">
                       <span className="text-xs text-stone-400 w-10 font-mono">{time}</span>
@@ -57,36 +51,23 @@ export default function DailyPlannerPage() {
                           newSchedule[i] = e.target.value;
                           setSchedule(newSchedule);
                         }}
-                        className="flex-1 bg-transparent border-b border-stone-300/50 focus:border-stone-400 outline-none text-xs text-stone-700 py-0.5 transition-colors"
+                        className="flex-1 bg-transparent border-b border-stone-300/50 focus:border-stone-400 outline-none text-xs text-stone-700 py-1 transition-colors"
                         dir="rtl"
                       />
                     </div>
                   ))}
                 </div>
               </section>
-
-              {/* Notes */}
-              <section>
-                <h2 className="text-sm font-medium text-stone-600 mb-3 tracking-wider uppercase">
-                  הערות
-                </h2>
-                <textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  className="w-full h-20 bg-transparent border border-stone-300/50 focus:border-stone-400 outline-none resize-none text-xs text-stone-700 p-2 rounded transition-colors"
-                  dir="rtl"
-                />
-              </section>
             </div>
 
             {/* Right Column */}
-            <div className="space-y-6">
+            <div className="flex flex-col gap-6">
               {/* Duties */}
-              <section>
+              <section className="flex-1">
                 <h2 className="text-sm font-medium text-stone-600 mb-3 tracking-wider uppercase">
                   חובות
                 </h2>
-                <div className="space-y-1">
+                <div className="flex flex-col justify-between h-[calc(100%-2rem)]">
                   {duties.map((duty, i) => (
                     <input
                       key={i}
@@ -97,7 +78,7 @@ export default function DailyPlannerPage() {
                         newDuties[i] = e.target.value;
                         setDuties(newDuties);
                       }}
-                      className="w-full bg-transparent border-b border-stone-300/50 focus:border-stone-400 outline-none text-xs text-stone-700 py-0.5 transition-colors"
+                      className="w-full bg-transparent border-b border-stone-300/50 focus:border-stone-400 outline-none text-xs text-stone-700 py-1 transition-colors"
                       dir="rtl"
                     />
                   ))}
@@ -105,11 +86,11 @@ export default function DailyPlannerPage() {
               </section>
 
               {/* Work Tasks */}
-              <section>
+              <section className="flex-1">
                 <h2 className="text-sm font-medium text-stone-600 mb-3 tracking-wider uppercase">
                   משימות לעבודה
                 </h2>
-                <div className="space-y-1">
+                <div className="flex flex-col justify-between h-[calc(100%-2rem)]">
                   {workTasks.map((task, i) => (
                     <div key={i} className="flex items-center gap-2">
                       <button
@@ -118,7 +99,7 @@ export default function DailyPlannerPage() {
                           newTasks[i] = { ...newTasks[i], done: !newTasks[i].done };
                           setWorkTasks(newTasks);
                         }}
-                        className={`w-4 h-4 rounded-full border-2 flex-shrink-0 transition-colors ${
+                        className={`w-3 h-3 rounded-full border-2 flex-shrink-0 transition-colors ${
                           task.done ? 'bg-stone-600 border-stone-600' : 'border-stone-300'
                         }`}
                       />
@@ -130,84 +111,13 @@ export default function DailyPlannerPage() {
                           newTasks[i] = { ...newTasks[i], text: e.target.value };
                           setWorkTasks(newTasks);
                         }}
-                        className={`flex-1 bg-transparent border-b border-stone-300/50 focus:border-stone-400 outline-none text-xs text-stone-700 py-0.5 transition-colors ${
+                        className={`flex-1 bg-transparent border-b border-stone-300/50 focus:border-stone-400 outline-none text-xs text-stone-700 py-1 transition-colors ${
                           task.done ? 'line-through opacity-50' : ''
                         }`}
                         dir="rtl"
                       />
                     </div>
                   ))}
-                </div>
-              </section>
-
-              {/* Wellness */}
-              <section>
-                <h2 className="text-sm font-medium text-stone-600 mb-3 tracking-wider uppercase">
-                  בריאות
-                </h2>
-                
-                {/* Water */}
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="text-xs text-stone-500 w-12">מים</span>
-                  <div className="flex gap-1.5">
-                    {water.map((filled, i) => (
-                      <button
-                        key={i}
-                        onClick={() => {
-                          const newWater = [...water];
-                          newWater[i] = !newWater[i];
-                          setWater(newWater);
-                        }}
-                        className={`w-5 h-5 rounded-full border-2 transition-colors ${
-                          filled ? 'bg-sky-400 border-sky-400' : 'border-stone-300'
-                        }`}
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                {/* Meals */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-stone-500 w-12">בוקר</span>
-                    <input
-                      type="text"
-                      value={breakfast}
-                      onChange={(e) => setBreakfast(e.target.value)}
-                      className="flex-1 bg-transparent border-b border-stone-300/50 focus:border-stone-400 outline-none text-xs text-stone-700 py-0.5 transition-colors"
-                      dir="rtl"
-                    />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-stone-500 w-12">צהריים</span>
-                    <input
-                      type="text"
-                      value={lunch}
-                      onChange={(e) => setLunch(e.target.value)}
-                      className="flex-1 bg-transparent border-b border-stone-300/50 focus:border-stone-400 outline-none text-xs text-stone-700 py-0.5 transition-colors"
-                      dir="rtl"
-                    />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-stone-500 w-12">ערב</span>
-                    <input
-                      type="text"
-                      value={dinner}
-                      onChange={(e) => setDinner(e.target.value)}
-                      className="flex-1 bg-transparent border-b border-stone-300/50 focus:border-stone-400 outline-none text-xs text-stone-700 py-0.5 transition-colors"
-                      dir="rtl"
-                    />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-stone-500 w-12">פעילות</span>
-                    <input
-                      type="text"
-                      value={exercise}
-                      onChange={(e) => setExercise(e.target.value)}
-                      className="flex-1 bg-transparent border-b border-stone-300/50 focus:border-stone-400 outline-none text-xs text-stone-700 py-0.5 transition-colors"
-                      dir="rtl"
-                    />
-                  </div>
                 </div>
               </section>
             </div>
