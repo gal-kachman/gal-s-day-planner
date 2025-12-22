@@ -123,7 +123,7 @@ export function ChatPanel({ tasks, events, quickPrompts }: ChatPanelProps) {
       setMessages([{
         id: 'welcome',
         role: 'assistant',
-        content: `Good evening, Gal! I'm your Chief of Staff. I'm here to help you plan tomorrow.\n\nI can see your **${activeTasks} active tasks** and **${eventCount} calendar events** for tomorrow. What would you like to work on?`,
+        content: `ערב טוב. אני אטלס, ראש המטה שלך.\n\nאני רואה **${activeTasks} משימות פעילות** ו-**${eventCount} אירועים** ביומן של מחר. איך אפשר לעזור?`,
         timestamp: new Date(),
       }]);
       setHasInitialized(true);
@@ -132,7 +132,7 @@ export function ChatPanel({ tasks, events, quickPrompts }: ChatPanelProps) {
       setMessages([{
         id: 'welcome',
         role: 'assistant',
-        content: `Good evening, Gal! I'm your Chief of Staff. Loading your tasks and calendar...`,
+        content: `ערב טוב. אני אטלס, ראש המטה שלך. טוען את המשימות והיומן שלך...`,
         timestamp: new Date(),
       }]);
     }
@@ -229,9 +229,9 @@ export function ChatPanel({ tasks, events, quickPrompts }: ChatPanelProps) {
           </div>
           <div>
             <h2 className="font-serif text-lg font-medium text-foreground">
-              Chief of Staff
+              אטלס
             </h2>
-            <p className="text-xs text-muted-foreground">Your AI planning assistant</p>
+            <p className="text-xs text-muted-foreground">ראש המטה שלך</p>
           </div>
         </div>
       </div>
@@ -312,7 +312,7 @@ export function ChatPanel({ tasks, events, quickPrompts }: ChatPanelProps) {
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask me about your schedule..."
+            placeholder="שאל אותי על לוח הזמנים שלך..."
             disabled={isTyping}
             className="flex-1 bg-transparent text-sm placeholder:text-muted-foreground focus:outline-none"
           />
