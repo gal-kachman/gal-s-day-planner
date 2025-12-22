@@ -24,7 +24,7 @@ export default function DailyPlannerPage() {
 
       <div className="h-screen w-full bg-stone-100 flex items-center justify-center p-4">
         <div 
-          className="h-full max-h-[95vh] aspect-[3/4] bg-no-repeat p-8 md:p-12"
+          className="h-full w-full max-w-5xl max-h-[95vh] bg-no-repeat p-8 md:p-12"
           style={{ backgroundImage: `url(${plannerBg})`, backgroundSize: '100% 100%' }}
         >
           {/* Header */}
