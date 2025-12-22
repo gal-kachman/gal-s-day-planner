@@ -28,13 +28,13 @@ export default function DailyPlannerPage() {
         <meta name="description" content="תכנן את היום שלך עם אטלס" />
       </Helmet>
 
-      <div 
-        className="min-h-screen w-full bg-cover bg-center bg-no-repeat flex items-center justify-center p-6"
-        style={{ backgroundImage: `url(${plannerBg})` }}
-      >
-        <div className="w-full max-w-4xl p-8 md:p-12">
+      <div className="min-h-screen w-full bg-stone-100 flex items-center justify-center p-4 md:p-8">
+        <div 
+          className="w-full max-w-2xl bg-contain bg-center bg-no-repeat p-10 md:p-14 aspect-[3/4]"
+          style={{ backgroundImage: `url(${plannerBg})`, backgroundSize: '100% 100%' }}
+        >
           {/* Header */}
-          <h1 className="text-2xl font-serif text-stone-800 text-center mb-8 tracking-wide">
+          <h1 className="text-xl font-serif text-stone-800 text-center mb-6 tracking-wide">
             תכנון יומי
           </h1>
 
@@ -57,7 +57,7 @@ export default function DailyPlannerPage() {
                           newSchedule[i] = e.target.value;
                           setSchedule(newSchedule);
                         }}
-                        className="flex-1 bg-transparent border-b border-stone-200 focus:border-stone-400 outline-none text-sm text-stone-700 py-1 transition-colors"
+                        className="flex-1 bg-transparent border-b border-stone-300/50 focus:border-stone-400 outline-none text-xs text-stone-700 py-0.5 transition-colors"
                         dir="rtl"
                       />
                     </div>
@@ -73,7 +73,7 @@ export default function DailyPlannerPage() {
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  className="w-full h-24 bg-transparent border border-stone-200 focus:border-stone-400 outline-none resize-none text-sm text-stone-700 p-3 rounded transition-colors"
+                  className="w-full h-20 bg-transparent border border-stone-300/50 focus:border-stone-400 outline-none resize-none text-xs text-stone-700 p-2 rounded transition-colors"
                   dir="rtl"
                 />
               </section>
@@ -97,7 +97,7 @@ export default function DailyPlannerPage() {
                         newDuties[i] = e.target.value;
                         setDuties(newDuties);
                       }}
-                      className="w-full bg-transparent border-b border-stone-200 focus:border-stone-400 outline-none text-sm text-stone-700 py-1 transition-colors"
+                      className="w-full bg-transparent border-b border-stone-300/50 focus:border-stone-400 outline-none text-xs text-stone-700 py-0.5 transition-colors"
                       dir="rtl"
                     />
                   ))}
@@ -130,7 +130,7 @@ export default function DailyPlannerPage() {
                           newTasks[i] = { ...newTasks[i], text: e.target.value };
                           setWorkTasks(newTasks);
                         }}
-                        className={`flex-1 bg-transparent border-b border-stone-200 focus:border-stone-400 outline-none text-sm text-stone-700 py-1 transition-colors ${
+                        className={`flex-1 bg-transparent border-b border-stone-300/50 focus:border-stone-400 outline-none text-xs text-stone-700 py-0.5 transition-colors ${
                           task.done ? 'line-through opacity-50' : ''
                         }`}
                         dir="rtl"
@@ -174,7 +174,7 @@ export default function DailyPlannerPage() {
                       type="text"
                       value={breakfast}
                       onChange={(e) => setBreakfast(e.target.value)}
-                      className="flex-1 bg-transparent border-b border-stone-200 focus:border-stone-400 outline-none text-sm text-stone-700 py-1 transition-colors"
+                      className="flex-1 bg-transparent border-b border-stone-300/50 focus:border-stone-400 outline-none text-xs text-stone-700 py-0.5 transition-colors"
                       dir="rtl"
                     />
                   </div>
@@ -184,7 +184,7 @@ export default function DailyPlannerPage() {
                       type="text"
                       value={lunch}
                       onChange={(e) => setLunch(e.target.value)}
-                      className="flex-1 bg-transparent border-b border-stone-200 focus:border-stone-400 outline-none text-sm text-stone-700 py-1 transition-colors"
+                      className="flex-1 bg-transparent border-b border-stone-300/50 focus:border-stone-400 outline-none text-xs text-stone-700 py-0.5 transition-colors"
                       dir="rtl"
                     />
                   </div>
@@ -194,7 +194,7 @@ export default function DailyPlannerPage() {
                       type="text"
                       value={dinner}
                       onChange={(e) => setDinner(e.target.value)}
-                      className="flex-1 bg-transparent border-b border-stone-200 focus:border-stone-400 outline-none text-sm text-stone-700 py-1 transition-colors"
+                      className="flex-1 bg-transparent border-b border-stone-300/50 focus:border-stone-400 outline-none text-xs text-stone-700 py-0.5 transition-colors"
                       dir="rtl"
                     />
                   </div>
@@ -204,7 +204,7 @@ export default function DailyPlannerPage() {
                       type="text"
                       value={exercise}
                       onChange={(e) => setExercise(e.target.value)}
-                      className="flex-1 bg-transparent border-b border-stone-200 focus:border-stone-400 outline-none text-sm text-stone-700 py-1 transition-colors"
+                      className="flex-1 bg-transparent border-b border-stone-300/50 focus:border-stone-400 outline-none text-xs text-stone-700 py-0.5 transition-colors"
                       dir="rtl"
                     />
                   </div>
