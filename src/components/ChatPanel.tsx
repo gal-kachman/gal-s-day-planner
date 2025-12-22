@@ -254,7 +254,7 @@ export function ChatPanel({ tasks, events, quickPrompts }: ChatPanelProps) {
               )}
             >
               {/* Render markdown-style formatting */}
-              <div className="prose prose-sm max-w-none">
+              <div className={cn("prose prose-sm max-w-none", message.role === 'assistant' && "text-right")} dir={message.role === 'assistant' ? 'rtl' : 'ltr'}>
                 {message.content.split('\n').map((line, i) => (
                   <p key={i} className="mb-1 last:mb-0">
                     {line.split('**').map((part, j) =>
