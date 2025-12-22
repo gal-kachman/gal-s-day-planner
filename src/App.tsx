@@ -7,6 +7,7 @@ import { HelmetProvider } from "react-helmet-async";
 import { AuthProvider } from "@/hooks/useAuth";
 import TomorrowPage from "./pages/TomorrowPage";
 import AuthPage from "./pages/AuthPage";
+import DailyPlannerPage from "./pages/DailyPlannerPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,7 @@ function App() {
               <Sonner />
               <Routes>
                 <Route path="/" element={<TomorrowPage />} />
+                <Route path="/planner" element={<DailyPlannerPage />} />
                 <Route path="/auth" element={<AuthPage />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
