@@ -22,17 +22,16 @@ export default function DailyPlannerPage() {
         <meta name="description" content="תכנן את היום שלך עם אטלס" />
       </Helmet>
 
-      <div className="h-screen w-full bg-stone-100 flex items-center justify-center p-4">
-        <div 
-          className="h-full w-full max-w-5xl max-h-[95vh] bg-no-repeat p-8 md:p-12"
-          style={{ backgroundImage: `url(${plannerBg})`, backgroundSize: '100% 100%' }}
-        >
-          {/* Header */}
-          <h1 className="text-xl font-serif text-stone-800 text-center mb-6 tracking-wide">
-            תכנון יומי
-          </h1>
+      <div 
+        className="min-h-screen w-full bg-no-repeat bg-cover bg-center p-[8%] pt-[6%]"
+        style={{ backgroundImage: `url(${plannerBg})` }}
+      >
+        {/* Header */}
+        <h1 className="text-2xl font-serif text-stone-800 text-center mb-8 tracking-wide">
+          תכנון יומי
+        </h1>
 
-          <div className="grid grid-cols-2 gap-8 h-[calc(100%-4rem)]">
+        <div className="grid grid-cols-2 gap-12 h-[calc(100vh-12rem)]">
             {/* Left Column - Schedule */}
             <div>
               <section className="h-full flex flex-col">
@@ -120,7 +119,6 @@ export default function DailyPlannerPage() {
                   ))}
                 </div>
               </section>
-            </div>
           </div>
         </div>
       </div>
