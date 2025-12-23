@@ -1,6 +1,7 @@
 import { Helmet } from 'react-helmet-async';
 import { useState, useEffect } from 'react';
-import { format } from 'date-fns';
+import { useSearchParams } from 'react-router-dom';
+import { format, parseISO } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { Check, Calendar, ListTodo, Coffee, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -43,7 +44,20 @@ const itemTypeColors = {
 };
 
 export default function DailyPlannerPage() {
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [searchParams] = useSearchParams();
+  const dateParam = searchParams.get('date');
+  
+  // Initialize with URL date param or default to today
+  const [selectedDate, setSelectedDate] = useState<Date>(() => {
+    if (dateParam) {
+      try {
+        return parseISO(dateParam);
+      } catch {
+        return new Date();
+      }
+    }
+    return new Date();
+  });
   const [scheduledDay, setScheduledDay] = useState<ScheduledDay | null>(null);
   const [items, setItems] = useState<ScheduledItem[]>([]);
   const [loading, setLoading] = useState(true);

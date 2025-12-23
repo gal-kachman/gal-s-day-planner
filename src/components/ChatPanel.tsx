@@ -190,9 +190,9 @@ export function ChatPanel({ tasks, events, quickPrompts }: ChatPanelProps) {
 
       setPendingSchedule(null);
       
-      // Navigate to daily planner after a short delay
+      // Navigate to daily planner with the scheduled date
       setTimeout(() => {
-        navigate('/planner');
+        navigate(`/planner?date=${dateStr}`);
       }, 1000);
     } catch (error) {
       console.error('Save schedule error:', error);
