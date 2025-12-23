@@ -68,11 +68,13 @@ export default function DailyPlannerPage() {
       setLoading(true);
       const dateStr = format(selectedDate, 'yyyy-MM-dd');
       
-      // Fetch scheduled day
+      // Fetch scheduled day (get the latest one if multiple exist)
       const { data: dayData, error: dayError } = await supabase
         .from('scheduled_days')
         .select('*')
         .eq('date', dateStr)
+        .order('created_at', { ascending: false })
+        .limit(1)
         .maybeSingle();
 
       if (dayError) {
