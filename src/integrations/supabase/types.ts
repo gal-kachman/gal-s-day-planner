@@ -14,7 +14,77 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      scheduled_days: {
+        Row: {
+          conversation_summary: string | null
+          created_at: string | null
+          date: string
+          id: string
+        }
+        Insert: {
+          conversation_summary?: string | null
+          created_at?: string | null
+          date: string
+          id?: string
+        }
+        Update: {
+          conversation_summary?: string | null
+          created_at?: string | null
+          date?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      scheduled_items: {
+        Row: {
+          end_time: string | null
+          id: string
+          is_done: boolean | null
+          item_type: string
+          location: string | null
+          notes: string | null
+          order_index: number | null
+          priority: string | null
+          scheduled_day_id: string | null
+          start_time: string
+          title: string
+        }
+        Insert: {
+          end_time?: string | null
+          id?: string
+          is_done?: boolean | null
+          item_type: string
+          location?: string | null
+          notes?: string | null
+          order_index?: number | null
+          priority?: string | null
+          scheduled_day_id?: string | null
+          start_time: string
+          title: string
+        }
+        Update: {
+          end_time?: string | null
+          id?: string
+          is_done?: boolean | null
+          item_type?: string
+          location?: string | null
+          notes?: string | null
+          order_index?: number | null
+          priority?: string | null
+          scheduled_day_id?: string | null
+          start_time?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduled_items_scheduled_day_id_fkey"
+            columns: ["scheduled_day_id"]
+            isOneToOne: false
+            referencedRelation: "scheduled_days"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

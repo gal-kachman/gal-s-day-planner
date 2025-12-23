@@ -1,7 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
-import { ChatMessage, Task, CalendarEvent, TimeBlock } from '@/types';
-import { Send, Sparkles, Calendar, ListTodo } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { ChatMessage, Task, CalendarEvent, ScheduleItem } from '@/types';
+import { Send, Sparkles, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { toast } from '@/hooks/use-toast';
 import botanicalCorner from '@/assets/botanical-corner.png';
 
 interface ChatPanelProps {
@@ -10,107 +13,44 @@ interface ChatPanelProps {
   quickPrompts: string[];
 }
 
-// Simple AI response generator (mock for now - will be replaced with Lovable AI)
-function generateAIResponse(
-  userMessage: string,
-  tasks: Task[],
-  events: CalendarEvent[]
-): { content: string; schedule?: TimeBlock[] } {
-  const activeTasks = tasks.filter((t) => t.status !== 'done');
-  const urgentTasks = activeTasks.filter((t) => t.priority === 'urgent' || t.priority === 'high');
-  const timedEvents = events.filter((e) => !e.isAllDay);
-
-  const messageLower = userMessage.toLowerCase();
-
-  // Plan tomorrow
-  if (messageLower.includes('plan') || messageLower.includes('schedule')) {
-    const schedule: TimeBlock[] = [];
-    let currentTime = new Date();
-    currentTime.setHours(8, 0, 0, 0);
-
-    // Add events first
-    timedEvents.forEach((event) => {
-      schedule.push({
-        startTime: event.startTime,
-        endTime: event.endTime,
-        title: event.title,
-        type: 'event',
-        eventId: event.id,
-      });
-    });
-
-    return {
-      content: `Good morning, Gal! Here's my suggested plan for tomorrow:\n\n` +
-        `**Fixed commitments:**\n` +
-        timedEvents.map((e) => `• ${new Date(e.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} - ${e.title}`).join('\n') +
-        `\n\n**Suggested task blocks:**\n` +
-        `• 8:00 AM - 8:45 AM: ${urgentTasks[0]?.title || 'Deep work block'}\n` +
-        `• 11:00 AM - 12:00 PM: ${urgentTasks[1]?.title || 'Admin tasks'}\n` +
-        `• 2:00 PM - 2:50 PM: ${activeTasks[2]?.title || 'Focus time'}\n` +
-        `• 4:00 PM - 4:30 PM: Wrap-up and planning\n\n` +
-        `*I've scheduled urgent tasks during your best focus hours and left buffer time around meetings. Want me to adjust anything?*`,
-      schedule,
-    };
-  }
-
-  // What to do first
-  if (messageLower.includes('first') || messageLower.includes('start')) {
-    const topTask = urgentTasks[0] || activeTasks[0];
-    if (topTask) {
-      return {
-        content: `I'd recommend starting with **"${topTask.title}"**.\n\n` +
-          `It's marked as ${topTask.priority} priority` +
-          (topTask.dueDate ? ' and due today' : '') +
-          `. Estimated time: ${topTask.estimatedMinutes || 25} minutes.\n\n` +
-          `Your first meeting isn't until ${timedEvents[0] ? new Date(timedEvents[0].startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : '9:00 AM'}, ` +
-          `so you have a good window for focused work.`,
-      };
+// Parse schedule JSON from Atlas response
+function parseScheduleFromResponse(content: string): ScheduleItem[] | null {
+  const scheduleMatch = content.match(/```schedule\s*([\s\S]*?)```/);
+  if (!scheduleMatch) return null;
+  
+  try {
+    const scheduleJson = scheduleMatch[1].trim();
+    const parsed = JSON.parse(scheduleJson);
+    if (Array.isArray(parsed)) {
+      return parsed.map((item: any) => ({
+        title: item.title,
+        startTime: item.startTime,
+        endTime: item.endTime,
+        itemType: item.itemType as 'task' | 'event' | 'break',
+        priority: item.priority,
+        location: item.location,
+        notes: item.notes,
+      }));
     }
-    return { content: `All your urgent tasks are done! I'd suggest reviewing your medium-priority items or taking a well-deserved break.` };
+  } catch (e) {
+    console.error('Failed to parse schedule JSON:', e);
   }
+  return null;
+}
 
-  // Find time for deep work
-  if (messageLower.includes('deep work') || messageLower.includes('focus')) {
-    return {
-      content: `Looking at tomorrow's schedule, here are your best windows for deep work:\n\n` +
-        `• **8:00 - 9:00 AM** - Fresh morning energy before standup\n` +
-        `• **11:00 AM - 12:30 PM** - Good 90-min block after your strategy sync\n` +
-        `• **2:00 - 3:00 PM** - Afternoon focus slot before engineering review\n\n` +
-        `*I'd especially recommend the 11:00 slot if you need to tackle that investor update - you'll be warmed up from the earlier meeting.*`,
-    };
-  }
-
-  // Quick tasks
-  if (messageLower.includes('30 min') || messageLower.includes('quick')) {
-    const quickTasks = activeTasks.filter((t) => (t.estimatedMinutes || 25) <= 30);
-    if (quickTasks.length > 0) {
-      return {
-        content: `Here are tasks you can knock out in 30 minutes or less:\n\n` +
-          quickTasks.map((t) => `• **${t.title}** (${t.estimatedMinutes || 25}m, ${t.priority})`).join('\n') +
-          `\n\n*These are perfect for that gap before your ${timedEvents[0]?.title || 'next meeting'}.*`,
-      };
-    }
-    return { content: `Most of your tasks need more than 30 minutes. Consider breaking down the larger ones?` };
-  }
-
-  // Default response
-  return {
-    content: `I can help you plan your day! Here's what I see:\n\n` +
-      `**${activeTasks.length} active tasks** (${urgentTasks.length} urgent/high priority)\n` +
-      `**${timedEvents.length} meetings** scheduled for tomorrow\n\n` +
-      `Try asking me:\n` +
-      `• "Plan my tomorrow"\n` +
-      `• "What should I do first?"\n` +
-      `• "Find time for deep work"\n` +
-      `• "What can I finish in 30 minutes?"`,
-  };
+// Remove schedule JSON block from display content
+function cleanResponseContent(content: string): string {
+  return content.replace(/```schedule\s*[\s\S]*?```/g, '').trim();
 }
 
 export function ChatPanel({ tasks, events, quickPrompts }: ChatPanelProps) {
+  const navigate = useNavigate();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [hasInitialized, setHasInitialized] = useState(false);
+  const [pendingSchedule, setPendingSchedule] = useState<ScheduleItem[] | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Update welcome message when data loads
@@ -118,7 +58,6 @@ export function ChatPanel({ tasks, events, quickPrompts }: ChatPanelProps) {
     const activeTasks = tasks.filter((t) => t.status !== 'done').length;
     const eventCount = events.length;
     
-    // Only update once we have data or after initial load
     if (!hasInitialized && (activeTasks > 0 || eventCount > 0)) {
       setMessages([{
         id: 'welcome',
@@ -128,7 +67,6 @@ export function ChatPanel({ tasks, events, quickPrompts }: ChatPanelProps) {
       }]);
       setHasInitialized(true);
     } else if (!hasInitialized && messages.length === 0) {
-      // Show loading state initially
       setMessages([{
         id: 'welcome',
         role: 'assistant',
@@ -160,6 +98,7 @@ export function ChatPanel({ tasks, events, quickPrompts }: ChatPanelProps) {
     setMessages(updatedMessages);
     setInput('');
     setIsTyping(true);
+    setPendingSchedule(null);
 
     try {
       const response = await fetch(
@@ -185,10 +124,16 @@ export function ChatPanel({ tasks, events, quickPrompts }: ChatPanelProps) {
 
       const data = await response.json();
       
+      // Check for schedule in response
+      const schedule = parseScheduleFromResponse(data.response);
+      if (schedule && schedule.length > 0) {
+        setPendingSchedule(schedule);
+      }
+      
       const assistantMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: data.response,
+        content: cleanResponseContent(data.response),
         timestamp: new Date(),
       };
 
@@ -204,6 +149,60 @@ export function ChatPanel({ tasks, events, quickPrompts }: ChatPanelProps) {
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setIsTyping(false);
+    }
+  };
+
+  const handleConfirmSchedule = async () => {
+    if (!pendingSchedule) return;
+
+    setIsSaving(true);
+    try {
+      // Get tomorrow's date
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const dateStr = tomorrow.toISOString().split('T')[0];
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/save-schedule`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({
+            date: dateStr,
+            items: pendingSchedule,
+            summary: 'תכנון עם אטלס',
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to save schedule');
+      }
+
+      toast({
+        title: 'התכנית נשמרה!',
+        description: 'מעביר אותך לתכנון היומי...',
+      });
+
+      setPendingSchedule(null);
+      
+      // Navigate to daily planner after a short delay
+      setTimeout(() => {
+        navigate('/daily-planner');
+      }, 1000);
+    } catch (error) {
+      console.error('Save schedule error:', error);
+      toast({
+        title: 'שגיאה בשמירת התכנית',
+        description: error instanceof Error ? error.message : 'אנא נסה שוב',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -288,6 +287,25 @@ export function ChatPanel({ tasks, events, quickPrompts }: ChatPanelProps) {
 
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Confirm Schedule Button */}
+      {pendingSchedule && (
+        <div className="px-4 py-3 border-t border-border/50 bg-secondary/30 relative z-10">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm text-muted-foreground" dir="rtl">
+              אטלס הכין תכנית עם {pendingSchedule.length} פריטים
+            </p>
+            <Button
+              onClick={handleConfirmSchedule}
+              disabled={isSaving}
+              className="gap-2"
+            >
+              <Check className="w-4 h-4" />
+              {isSaving ? 'שומר...' : 'אשר תכנית'}
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Quick prompts */}
       <div className="px-4 pb-2 relative z-10">

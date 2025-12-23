@@ -44,3 +44,21 @@ export interface MicroseasonInfo {
   name: string;
   tone: string;
 }
+
+export interface ScheduleItem {
+  title: string;
+  startTime: string; // "HH:MM" format
+  endTime?: string;
+  itemType: 'task' | 'event' | 'break';
+  priority?: TaskPriority;
+  location?: string;
+  notes?: string;
+}
+
+export interface ScheduledDay {
+  id: string;
+  date: string;
+  createdAt: string;
+  conversationSummary?: string;
+  items: ScheduleItem[];
+}
