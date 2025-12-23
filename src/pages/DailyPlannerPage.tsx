@@ -25,8 +25,11 @@ export default function DailyPlannerPage() {
       </Helmet>
 
       <div 
-        className="min-h-screen w-full bg-no-repeat bg-cover bg-center p-[8%] pt-[6%]"
-        style={{ backgroundImage: `url(${plannerBg})` }}
+        className="min-h-screen w-screen bg-no-repeat bg-cover bg-center px-12 py-8 overflow-hidden"
+        style={{ 
+          backgroundImage: `url(${plannerBg})`,
+          backgroundSize: '100% 100%'
+        }}
       >
         {/* Header */}
         <div className="text-center mb-8">
