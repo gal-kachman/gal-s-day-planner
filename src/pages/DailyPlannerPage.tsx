@@ -62,14 +62,14 @@ export default function DailyPlannerPage() {
   const [items, setItems] = useState<ScheduledItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch schedule for selected date
+  // Fetch schedule - show selected date's plan, or fall back to most recent plan
   useEffect(() => {
     async function fetchSchedule() {
       setLoading(true);
       const dateStr = format(selectedDate, 'yyyy-MM-dd');
       
-      // Fetch scheduled day (get the latest one if multiple exist)
-      const { data: dayData, error: dayError } = await supabase
+      // First, try to fetch schedule for the selected date
+      let { data: dayData, error: dayError } = await supabase
         .from('scheduled_days')
         .select('*')
         .eq('date', dateStr)
@@ -81,6 +81,25 @@ export default function DailyPlannerPage() {
         console.error('Error fetching scheduled day:', dayError);
         setLoading(false);
         return;
+      }
+
+      // If no plan for selected date, fetch the most recent plan overall
+      if (!dayData) {
+        const { data: latestData, error: latestError } = await supabase
+          .from('scheduled_days')
+          .select('*')
+          .order('date', { ascending: false })
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (latestError) {
+          console.error('Error fetching latest schedule:', latestError);
+          setLoading(false);
+          return;
+        }
+
+        dayData = latestData;
       }
 
       if (!dayData) {
@@ -185,6 +204,13 @@ export default function DailyPlannerPage() {
               <ChevronLeft className="w-5 h-5" />
             </Button>
           </div>
+          
+          {/* Show notice if displaying a different date's plan */}
+          {scheduledDay && scheduledDay.date !== format(selectedDate, 'yyyy-MM-dd') && (
+            <p className="text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-1 mt-2 inline-block">
+              מציג תכנית מתאריך {format(parseISO(scheduledDay.date), 'd בMMMM', { locale: he })}
+            </p>
+          )}
         </div>
 
         {loading ? (
