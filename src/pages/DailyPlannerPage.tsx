@@ -48,7 +48,7 @@ export default function DailyPlannerPage() {
                 <h2 className="text-sm font-medium text-stone-600 mb-3 tracking-wider uppercase">
                   לוח זמנים
                 </h2>
-                <div className="flex-1 flex flex-col justify-between">
+                <div className="flex-1 flex flex-col justify-between pl-4">
                   {timeSlots.map((time, i) => (
                     <div key={i} className="flex items-center gap-3 group">
                       <span className="text-xs text-stone-400 w-10 font-mono">{time}</span>
