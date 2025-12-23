@@ -15,32 +15,59 @@ interface ChatPanelProps {
 
 // Parse schedule JSON from Atlas response
 function parseScheduleFromResponse(content: string): ScheduleItem[] | null {
-  const scheduleMatch = content.match(/```schedule\s*([\s\S]*?)```/);
-  if (!scheduleMatch) return null;
-  
-  try {
-    const scheduleJson = scheduleMatch[1].trim();
-    const parsed = JSON.parse(scheduleJson);
-    if (Array.isArray(parsed)) {
-      return parsed.map((item: any) => ({
-        title: item.title,
-        startTime: item.startTime,
-        endTime: item.endTime,
-        itemType: item.itemType as 'task' | 'event' | 'break',
-        priority: item.priority,
-        location: item.location,
-        notes: item.notes,
-      }));
+  // Try to match ```schedule block first
+  const codeBlockMatch = content.match(/```schedule\s*([\s\S]*?)```/);
+  if (codeBlockMatch) {
+    try {
+      const scheduleJson = codeBlockMatch[1].trim();
+      const parsed = JSON.parse(scheduleJson);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.map((item: any) => ({
+          title: item.title,
+          startTime: item.startTime,
+          endTime: item.endTime,
+          itemType: item.itemType as 'task' | 'event' | 'break',
+          priority: item.priority,
+          location: item.location,
+          notes: item.notes,
+        }));
+      }
+    } catch (e) {
+      console.error('Failed to parse schedule code block:', e);
     }
-  } catch (e) {
-    console.error('Failed to parse schedule JSON:', e);
   }
+  
+  // Try to match plain JSON array at the end of the response
+  const jsonArrayMatch = content.match(/\n\s*(\[\s*\{[\s\S]*?\}\s*\])\s*$/);
+  if (jsonArrayMatch) {
+    try {
+      const parsed = JSON.parse(jsonArrayMatch[1]);
+      if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].startTime && parsed[0].itemType) {
+        return parsed.map((item: any) => ({
+          title: item.title,
+          startTime: item.startTime,
+          endTime: item.endTime,
+          itemType: item.itemType as 'task' | 'event' | 'break',
+          priority: item.priority,
+          location: item.location,
+          notes: item.notes,
+        }));
+      }
+    } catch (e) {
+      console.error('Failed to parse plain JSON array:', e);
+    }
+  }
+  
   return null;
 }
 
 // Remove schedule JSON block from display content
 function cleanResponseContent(content: string): string {
-  return content.replace(/```schedule\s*[\s\S]*?```/g, '').trim();
+  // Remove ```schedule blocks
+  let cleaned = content.replace(/```schedule\s*[\s\S]*?```/g, '').trim();
+  // Remove plain JSON array at the end
+  cleaned = cleaned.replace(/\n\s*\[\s*\{[\s\S]*?\}\s*\]\s*$/, '').trim();
+  return cleaned;
 }
 
 export function ChatPanel({ tasks, events, quickPrompts }: ChatPanelProps) {
