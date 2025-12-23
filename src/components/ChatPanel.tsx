@@ -192,7 +192,7 @@ export function ChatPanel({ tasks, events, quickPrompts }: ChatPanelProps) {
       
       // Navigate to daily planner after a short delay
       setTimeout(() => {
-        navigate('/daily-planner');
+        navigate('/planner');
       }, 1000);
     } catch (error) {
       console.error('Save schedule error:', error);
