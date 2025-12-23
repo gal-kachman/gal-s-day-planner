@@ -43,7 +43,7 @@ export default function DailyPlannerPage() {
                 <h2 className="text-sm font-medium text-stone-600 mb-3 tracking-wider uppercase">
                   לוח זמנים
                 </h2>
-                <div className="flex-1 flex-col pl-4 px-[10px] flex items-start justify-between">
+                <div className="flex-1 flex-col pl-4 px-[10px] flex items-start justify-between mx-0 my-[20px]">
                   {timeSlots.map((time, i) => <div key={i} className="flex items-center gap-3 group">
                       <span className="text-xs text-stone-400 w-10 font-mono">{time}</span>
                       <input type="text" value={schedule[i]} onChange={e => {
