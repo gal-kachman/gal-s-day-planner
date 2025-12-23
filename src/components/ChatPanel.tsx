@@ -53,12 +53,15 @@ export function ChatPanel({ tasks, events, quickPrompts }: ChatPanelProps) {
   const [isSaving, setIsSaving] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Check if data has loaded
+  const isDataLoaded = tasks.length > 0 || events.length > 0;
+
   // Update welcome message when data loads
   useEffect(() => {
     const activeTasks = tasks.filter((t) => t.status !== 'done').length;
     const eventCount = events.length;
     
-    if (!hasInitialized && (activeTasks > 0 || eventCount > 0)) {
+    if (!hasInitialized && isDataLoaded) {
       setMessages([{
         id: 'welcome',
         role: 'assistant',
@@ -74,7 +77,7 @@ export function ChatPanel({ tasks, events, quickPrompts }: ChatPanelProps) {
         timestamp: new Date(),
       }]);
     }
-  }, [tasks, events, hasInitialized, messages.length]);
+  }, [tasks, events, hasInitialized, messages.length, isDataLoaded]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -315,7 +318,7 @@ export function ChatPanel({ tasks, events, quickPrompts }: ChatPanelProps) {
               key={prompt}
               onClick={() => handleSend(prompt)}
               className="quick-prompt"
-              disabled={isTyping}
+              disabled={isTyping || !isDataLoaded}
             >
               {prompt}
             </button>
@@ -330,16 +333,16 @@ export function ChatPanel({ tasks, events, quickPrompts }: ChatPanelProps) {
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="שאל אותי על לוח הזמנים שלך..."
-            disabled={isTyping}
-            className="flex-1 bg-transparent text-sm placeholder:text-muted-foreground focus:outline-none"
+            placeholder={isDataLoaded ? "שאל אותי על לוח הזמנים שלך..." : "ממתין לטעינת נתונים..."}
+            disabled={isTyping || !isDataLoaded}
+            className="flex-1 bg-transparent text-sm placeholder:text-muted-foreground focus:outline-none disabled:opacity-50"
           />
           <button
             type="submit"
-            disabled={!input.trim() || isTyping}
+            disabled={!input.trim() || isTyping || !isDataLoaded}
             className={cn(
               'p-2 rounded-lg transition-colors',
-              input.trim() && !isTyping
+              input.trim() && !isTyping && isDataLoaded
                 ? 'bg-primary text-primary-foreground hover:bg-primary/90'
                 : 'text-muted-foreground'
             )}
