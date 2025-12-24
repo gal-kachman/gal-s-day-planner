@@ -63,6 +63,28 @@
     --chat-user: 35 30% 94%;
     --chat-assistant: 40 40% 98%;
 
+    /* Library colors - Vintage wood & leather */
+    --library-wood: 25 45% 25%;
+    --library-wood-light: 30 40% 35%;
+    --library-wood-dark: 20 50% 15%;
+    --library-paper: 45 30% 92%;
+    --library-gold: 43 70% 55%;
+    --library-ink: 25 20% 15%;
+    
+    /* Book spine colors by media type */
+    --library-book: 350 40% 35%;
+    --library-book-dark: 350 45% 25%;
+    --library-movie: 220 45% 30%;
+    --library-movie-dark: 220 50% 20%;
+    --library-tv: 160 40% 30%;
+    --library-tv-dark: 160 45% 20%;
+    --library-podcast: 35 60% 45%;
+    --library-podcast-dark: 35 65% 35%;
+    --library-article: 270 30% 40%;
+    --library-article-dark: 270 35% 30%;
+    --library-default: 30 30% 40%;
+    --library-default-dark: 30 35% 30%;
+
     /* Sidebar (if needed) */
     --sidebar-background: 40 33% 96%;
     --sidebar-foreground: 30 10% 25%;
@@ -210,6 +232,56 @@
   /* Botanical decorative element */
   .botanical-accent {
     @apply opacity-30 pointer-events-none select-none;
+  }
+
+  /* Library page styles */
+  .library-page {
+    background: linear-gradient(
+      180deg,
+      hsl(var(--library-wood-dark)) 0%,
+      hsl(var(--library-wood)) 30%,
+      hsl(var(--library-wood-dark)) 100%
+    );
+  }
+
+  .library-ambient-light {
+    background: radial-gradient(
+      ellipse 80% 50% at 50% 0%,
+      hsl(43 70% 55% / 0.08) 0%,
+      transparent 70%
+    );
+  }
+
+  .library-header {
+    background: linear-gradient(
+      180deg,
+      hsl(var(--library-wood-dark) / 0.9) 0%,
+      transparent 100%
+    );
+  }
+
+  .book-spine {
+    background-image: linear-gradient(
+      90deg,
+      hsl(0 0% 0% / 0.15) 0%,
+      transparent 15%,
+      transparent 85%,
+      hsl(0 0% 0% / 0.1) 100%
+    );
+  }
+
+  .book-title {
+    text-shadow: 
+      0 1px 0 hsl(43 70% 35% / 0.5),
+      0 -1px 0 hsl(0 0% 0% / 0.3);
+  }
+
+  .library-modal {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--library-paper)) 0%,
+      hsl(45 25% 88%) 100%
+    );
   }
 }
 
