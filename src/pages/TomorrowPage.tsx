@@ -16,7 +16,7 @@ import { toast } from '@/hooks/use-toast';
 const GOOGLE_CONFIG = {
   calendarId: 'c27ecdqu2qtgmr51v7r3iggre4@group.calendar.google.com',
   spreadsheetId: '18VH_PFbgVD86BCLnin775mkELzGuj--kfLwz1xt9axs',
-  sheetRange: 'Sheet1!A:E',
+  sheetRange: 'tasks!A:E',
 };
 
 export default function TomorrowPage() {
