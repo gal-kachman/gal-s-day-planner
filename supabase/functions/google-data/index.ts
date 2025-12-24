@@ -138,11 +138,40 @@ async function fetchCalendarEvents(accessToken: string, calendarId: string): Pro
   }));
 }
 
+// Get the first sheet name from spreadsheet metadata
+async function getFirstSheetName(accessToken: string, spreadsheetId: string): Promise<string> {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?fields=sheets.properties.title`;
+  
+  const response = await fetch(url, {
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+    },
+  });
+  
+  if (!response.ok) {
+    console.error('Failed to get spreadsheet metadata');
+    return 'Sheet1'; // Fallback to default
+  }
+  
+  const data = await response.json();
+  const firstSheet = data.sheets?.[0]?.properties?.title;
+  console.log(`First sheet name: ${firstSheet}`);
+  return firstSheet || 'Sheet1';
+}
+
 // Fetch tasks from Google Sheet
 async function fetchSheetTasks(accessToken: string, spreadsheetId: string, range: string): Promise<any[]> {
-  console.log(`Fetching sheet data from ${spreadsheetId}, range: ${range}`);
+  // If range starts with "Sheet1", try to get actual sheet name
+  let actualRange = range;
+  if (range.startsWith('Sheet1')) {
+    const actualSheetName = await getFirstSheetName(accessToken, spreadsheetId);
+    actualRange = range.replace('Sheet1', actualSheetName);
+    console.log(`Adjusted range from ${range} to ${actualRange}`);
+  }
   
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}`;
+  console.log(`Fetching sheet data from ${spreadsheetId}, range: ${actualRange}`);
+  
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(actualRange)}`;
   
   const response = await fetch(url, {
     headers: {
