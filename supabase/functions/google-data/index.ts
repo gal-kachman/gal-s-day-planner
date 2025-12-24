@@ -227,6 +227,49 @@ async function fetchSheetTasks(accessToken: string, spreadsheetId: string, range
   });
 }
 
+// Fetch library items from Google Sheet (culture tab)
+async function fetchLibraryItems(accessToken: string, spreadsheetId: string, range: string): Promise<any[]> {
+  console.log(`Fetching library items from ${spreadsheetId}, range: ${range}`);
+  
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}`;
+  
+  const response = await fetch(url, {
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+    },
+  });
+  
+  if (!response.ok) {
+    const error = await response.text();
+    console.error('Sheets API error:', error);
+    throw new Error(`Failed to fetch library data: ${error}`);
+  }
+  
+  const data = await response.json();
+  const rows = data.values || [];
+  
+  console.log(`Found ${rows.length} rows in library sheet`);
+  
+  // Skip header row
+  // Columns: סטטוס, סוג מדיה, כותרת בעברית, כותרת מקורית, יוצרים, שנה, תקציר, הערות, קישור לתמונה
+  if (rows.length <= 1) {
+    return [];
+  }
+  
+  return rows.slice(1).map((row: string[], index: number) => ({
+    id: `library-${index + 1}`,
+    status: row[0] || '',
+    mediaType: row[1] || '',
+    hebrewTitle: row[2] || 'ללא כותרת',
+    originalTitle: row[3] || '',
+    creators: row[4] || '',
+    year: row[5] || '',
+    summary: row[6] || '',
+    notes: row[7] || '',
+    imageUrl: row[8] || '',
+  }));
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -278,6 +321,16 @@ serve(async (req) => {
         );
       }
       result.tasks = await fetchSheetTasks(accessToken, spreadsheetId, sheetRange || 'Sheet1!A:E');
+    }
+
+    if (action === 'library') {
+      if (!spreadsheetId) {
+        return new Response(
+          JSON.stringify({ error: 'spreadsheetId is required for library action' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      result.libraryItems = await fetchLibraryItems(accessToken, spreadsheetId, sheetRange || 'culture!A:I');
     }
 
     console.log('Returning data successfully');

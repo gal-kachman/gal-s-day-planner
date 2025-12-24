@@ -8,6 +8,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import TomorrowPage from "./pages/TomorrowPage";
 import AuthPage from "./pages/AuthPage";
 import DailyPlannerPage from "./pages/DailyPlannerPage";
+import LibraryPage from "./pages/LibraryPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ function App() {
               <Routes>
                 <Route path="/" element={<TomorrowPage />} />
                 <Route path="/planner" element={<DailyPlannerPage />} />
+                <Route path="/library" element={<LibraryPage />} />
                 <Route path="/auth" element={<AuthPage />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>

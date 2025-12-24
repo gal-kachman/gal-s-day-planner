@@ -55,6 +55,20 @@ export interface ScheduleItem {
   notes?: string;
 }
 
+// Library/Culture types
+export interface LibraryItem {
+  id: string;
+  status: string;
+  mediaType: string;
+  hebrewTitle: string;
+  originalTitle?: string;
+  creators?: string;
+  year?: string;
+  summary?: string;
+  notes?: string;
+  imageUrl?: string;
+}
+
 export interface ScheduledDay {
   id: string;
   date: string;
