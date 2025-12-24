@@ -96,45 +96,98 @@ async function getAccessToken(serviceAccount: ServiceAccountKey, scopes: string[
   return data.access_token;
 }
 
-// Append completed tasks to a Google Sheet column
-async function appendToSheet(
+// Update completed tasks in Google Sheet by matching column C
+async function updateSheetWithCompletions(
   accessToken: string, 
   spreadsheetId: string, 
   sheetName: string,
   tasks: { task_title: string; completed_at: string }[]
-): Promise<void> {
+): Promise<{ updated: number; notFound: string[] }> {
   if (tasks.length === 0) {
-    console.log('No tasks to append');
-    return;
+    console.log('No tasks to update');
+    return { updated: 0, notFound: [] };
   }
 
-  // Format tasks as rows: [Title, Completed At]
-  const values = tasks.map(task => [
-    task.task_title,
-    new Date(task.completed_at).toLocaleString('he-IL', { timeZone: 'Asia/Jerusalem' })
-  ]);
+  // First, read column C to find matching rows
+  const readRange = `${sheetName}!C:C`;
+  const readUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(readRange)}`;
 
-  const range = `${sheetName}!A:B`;
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
+  console.log(`Reading column C from sheet ${sheetName}`);
 
-  console.log(`Appending ${tasks.length} tasks to sheet ${sheetName}`);
+  const readResponse = await fetch(readUrl, {
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+    },
+  });
 
-  const response = await fetch(url, {
+  if (!readResponse.ok) {
+    const error = await readResponse.text();
+    console.error('Sheets API read error:', error);
+    throw new Error(`Failed to read sheet: ${error}`);
+  }
+
+  const readData = await readResponse.json();
+  const columnCValues: string[][] = readData.values || [];
+
+  console.log(`Found ${columnCValues.length} rows in column C`);
+
+  // Build batch update requests
+  const updateRequests: { range: string; values: string[][] }[] = [];
+  const notFound: string[] = [];
+
+  for (const task of tasks) {
+    // Find row where column C matches task_title
+    const rowIndex = columnCValues.findIndex(
+      (row) => row[0]?.trim().toLowerCase() === task.task_title.trim().toLowerCase()
+    );
+
+    if (rowIndex === -1) {
+      console.log(`Task not found in sheet: "${task.task_title}"`);
+      notFound.push(task.task_title);
+      continue;
+    }
+
+    // Row numbers are 1-indexed in Sheets API
+    const rowNumber = rowIndex + 1;
+    const timestamp = new Date(task.completed_at).toLocaleString('he-IL', { timeZone: 'Asia/Jerusalem' });
+
+    // Update columns H and I for this row
+    updateRequests.push({
+      range: `${sheetName}!H${rowNumber}:I${rowNumber}`,
+      values: [[task.task_title, timestamp]]
+    });
+
+    console.log(`Will update row ${rowNumber}: H="${task.task_title}", I="${timestamp}"`);
+  }
+
+  if (updateRequests.length === 0) {
+    console.log('No matching rows found to update');
+    return { updated: 0, notFound };
+  }
+
+  // Batch update all matching rows
+  const batchUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values:batchUpdate`;
+
+  const batchResponse = await fetch(batchUrl, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${accessToken}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ values }),
+    body: JSON.stringify({
+      valueInputOption: 'USER_ENTERED',
+      data: updateRequests
+    }),
   });
 
-  if (!response.ok) {
-    const error = await response.text();
-    console.error('Sheets API error:', error);
-    throw new Error(`Failed to append to sheet: ${error}`);
+  if (!batchResponse.ok) {
+    const error = await batchResponse.text();
+    console.error('Sheets API batch update error:', error);
+    throw new Error(`Failed to update sheet: ${error}`);
   }
 
-  console.log('Successfully appended tasks to sheet');
+  console.log(`Successfully updated ${updateRequests.length} rows in sheet`);
+  return { updated: updateRequests.length, notFound };
 }
 
 serve(async (req) => {
@@ -164,15 +217,10 @@ serve(async (req) => {
       );
     }
 
-    // Parse request body for spreadsheet config
-    const { spreadsheetId, sheetName = 'completed_tasks' } = await req.json();
-
-    if (!spreadsheetId) {
-      return new Response(
-        JSON.stringify({ error: 'spreadsheetId is required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    // Parse request body for spreadsheet config (with defaults for your specific sheet)
+    const body = await req.json().catch(() => ({}));
+    const spreadsheetId = body.spreadsheetId || '1Jp-Aq4xQzwrzaQwXErSxq3oJYvEMyWADLttXMZSSTZc';
+    const sheetName = body.sheetName || 'Sheet1';
 
     // Initialize Supabase client
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -211,13 +259,15 @@ serve(async (req) => {
     const accessToken = await getAccessToken(serviceAccount, scopes);
     console.log('Access token obtained successfully');
 
-    // Append to Google Sheet
-    await appendToSheet(accessToken, spreadsheetId, sheetName, completedTasks);
+    // Update Google Sheet by matching column C
+    const result = await updateSheetWithCompletions(accessToken, spreadsheetId, sheetName, completedTasks);
 
     return new Response(
       JSON.stringify({ 
         message: 'Successfully synced completed tasks', 
-        count: completedTasks.length 
+        updated: result.updated,
+        notFound: result.notFound,
+        totalProcessed: completedTasks.length
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
