@@ -11,8 +11,8 @@ import { Search, BookOpen, Film, Tv, Podcast, FileText, Library, ArrowRight } fr
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
-// Get spreadsheet ID from environment or use a default
-const SPREADSHEET_ID = import.meta.env.VITE_GOOGLE_SPREADSHEET_ID || '';
+// Google Spreadsheet ID for the library/culture data
+const SPREADSHEET_ID = '18VH_PFbgVD86BCLnin775mkELzGuj--kfLwz1xt9axs';
 
 const mediaTypeFilters = [
   { key: 'all', label: 'הכל', icon: Library },
