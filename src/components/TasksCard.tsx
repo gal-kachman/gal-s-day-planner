@@ -37,7 +37,6 @@ export function TasksCard({
   const [tempEstimate, setTempEstimate] = useState('');
 
   const filteredTasks = tasks
-    .filter((task) => task.status !== 'done')
     .filter((task) =>
       task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       task.tags?.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -126,7 +125,10 @@ export function TasksCard({
 
                 {/* Task content */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground leading-snug">
+                  <p className={cn(
+                    "text-sm font-medium leading-snug",
+                    task.status === 'done' ? 'line-through text-muted-foreground' : 'text-foreground'
+                  )}>
                     {task.title}
                   </p>
                   {task.notes && (
