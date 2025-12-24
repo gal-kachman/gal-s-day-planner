@@ -11,6 +11,7 @@ import { useGoogleData } from '@/hooks/useGoogleData';
 import { RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 // Your Google integration config
 const GOOGLE_CONFIG = {
@@ -58,10 +59,27 @@ export default function TomorrowPage() {
     fetchData(GOOGLE_CONFIG, 'all');
   };
 
-  const handleStatusChange = (taskId: string, status: TaskStatus) => {
+  const handleStatusChange = async (taskId: string, status: TaskStatus) => {
+    // Find task before updating state
+    const task = tasks.find(t => t.id === taskId);
+    
     setTasks((prev) =>
-      prev.map((task) => (task.id === taskId ? { ...task, status } : task))
+      prev.map((t) => (t.id === taskId ? { ...t, status } : t))
     );
+
+    // Log completion to database when marked as done
+    if (status === 'done' && task) {
+      const { error } = await supabase.from('task_completions').insert({
+        task_title: task.title,
+        original_task_id: task.id,
+        notes: task.notes || null,
+        priority: task.priority || null,
+      });
+      
+      if (error) {
+        console.error('Failed to log task completion:', error);
+      }
+    }
   };
 
   const handlePriorityChange = (taskId: string, priority: TaskPriority) => {
