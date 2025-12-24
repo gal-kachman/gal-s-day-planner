@@ -44,9 +44,8 @@ export function TasksCard({
     );
 
   const handleStatusCycle = (task: Task) => {
-    const statusOrder: TaskStatus[] = ['todo', 'doing', 'done'];
-    const currentIndex = statusOrder.indexOf(task.status);
-    const nextStatus = statusOrder[(currentIndex + 1) % statusOrder.length];
+    // Simple toggle: todo -> done, doing -> done, done -> todo
+    const nextStatus: TaskStatus = task.status === 'done' ? 'todo' : 'done';
     onStatusChange(task.id, nextStatus);
   };
 
