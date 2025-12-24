@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.save-schedule]
 verify_jwt = false
+
+[functions.sync-completed-tasks]
+verify_jwt = false
