@@ -8,7 +8,7 @@ import botanicalFooter from '@/assets/botanical-footer.png';
 import { Task, TaskStatus, TaskPriority, CalendarEvent } from '@/types';
 import { mockMicroseason, quickPrompts } from '@/data/mockData';
 import { useGoogleData } from '@/hooks/useGoogleData';
-import { RefreshCw, Download } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -105,63 +105,6 @@ export default function TomorrowPage() {
     setTasks((prev) => [...prev, newTask]);
   };
 
-  const [exporting, setExporting] = useState(false);
-
-  const handleExportCSV = async () => {
-    setExporting(true);
-    try {
-      const { data, error } = await supabase
-        .from('task_completions')
-        .select('*')
-        .order('completed_at', { ascending: false });
-
-      if (error) throw error;
-
-      if (!data || data.length === 0) {
-        toast({
-          title: 'אין נתונים לייצוא',
-          description: 'לא נמצאו משימות שהושלמו',
-        });
-        return;
-      }
-
-      // Create CSV content
-      const headers = ['כותרת', 'תאריך השלמה', 'עדיפות', 'הערות'];
-      const rows = data.map(row => [
-        `"${row.task_title?.replace(/"/g, '""') || ''}"`,
-        row.completed_at ? new Date(row.completed_at).toLocaleString('he-IL') : '',
-        row.priority || '',
-        `"${row.notes?.replace(/"/g, '""') || ''}"`,
-      ]);
-
-      const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-      const BOM = '\uFEFF';
-      const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
-      
-      // Download
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `completed-tasks-${new Date().toISOString().split('T')[0]}.csv`;
-      link.click();
-      URL.revokeObjectURL(url);
-
-      toast({
-        title: 'הייצוא הושלם',
-        description: `${data.length} משימות יוצאו בהצלחה`,
-      });
-    } catch (err) {
-      console.error('Export failed:', err);
-      toast({
-        title: 'הייצוא נכשל',
-        description: 'אירעה שגיאה בייצוא הנתונים',
-        variant: 'destructive',
-      });
-    } finally {
-      setExporting(false);
-    }
-  };
-
   return (
     <>
       <Helmet>
@@ -175,18 +118,8 @@ export default function TomorrowPage() {
 
         {/* Main content */}
         <main className="container mx-auto max-w-7xl px-4 py-6">
-          {/* Action buttons */}
-          <div className="flex justify-end gap-2 mb-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleExportCSV}
-              disabled={exporting}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <Download className={`w-4 h-4 ml-2 ${exporting ? 'animate-pulse' : ''}`} />
-              {exporting ? 'מייצא...' : 'ייצא משימות שהושלמו'}
-            </Button>
+          {/* Refresh button */}
+          <div className="flex justify-end mb-4">
             <Button
               variant="ghost"
               size="sm"
