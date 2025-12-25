@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useLibraryData } from '@/hooks/useLibraryData';
+import { useLibraryEnrichment } from '@/hooks/useLibraryEnrichment';
 import { BookSpine } from '@/components/library/BookSpine';
 import { WoodenShelf } from '@/components/library/WoodenShelf';
 import { LibraryDetailModal } from '@/components/library/LibraryDetailModal';
 import { LibraryItem } from '@/types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, BookOpen, Film, Tv, Podcast, FileText, Library, ArrowRight } from 'lucide-react';
+import { Search, BookOpen, Film, Tv, Podcast, FileText, Library, ArrowRight, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
@@ -38,8 +39,17 @@ export default function LibraryPage() {
     setSearchQuery,
   } = useLibraryData({ spreadsheetId: SPREADSHEET_ID });
 
+  const { enrichItem, isEnriching, getEnrichedImage } = useLibraryEnrichment();
+
   const [selectedItem, setSelectedItem] = useState<LibraryItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleEnrichAll = async () => {
+    const itemsWithoutImages = items.filter(item => !item.imageUrl && !getEnrichedImage(item.id));
+    for (const item of itemsWithoutImages.slice(0, 5)) { // Limit to 5 at a time
+      await enrichItem(item);
+    }
+  };
 
   const handleItemClick = (item: LibraryItem) => {
     setSelectedItem(item);
@@ -162,6 +172,20 @@ export default function LibraryPage() {
                   ))}
                 </div>
               )}
+              {/* Enrich all button */}
+              {items.some(item => !item.imageUrl && !getEnrichedImage(item.id)) && (
+                <div className="flex justify-center mt-4">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleEnrichAll}
+                    className="gap-2 text-library-gold/70 hover:text-library-gold hover:bg-library-gold/10"
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    <span>חפש תמונות אוטומטית</span>
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         </header>
@@ -191,6 +215,9 @@ export default function LibraryPage() {
                         key={item.id}
                         item={item}
                         onClick={() => handleItemClick(item)}
+                        enrichedImage={getEnrichedImage(item.id)}
+                        isEnriching={isEnriching(item.id)}
+                        onEnrich={() => enrichItem(item)}
                       />
                     ))}
                   </WoodenShelf>
