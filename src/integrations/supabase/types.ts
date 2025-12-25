@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      library_item_enrichments: {
+        Row: {
+          created_at: string
+          enriched_at: string
+          id: string
+          image_url: string | null
+          item_id: string
+          source_query: string | null
+        }
+        Insert: {
+          created_at?: string
+          enriched_at?: string
+          id?: string
+          image_url?: string | null
+          item_id: string
+          source_query?: string | null
+        }
+        Update: {
+          created_at?: string
+          enriched_at?: string
+          id?: string
+          image_url?: string | null
+          item_id?: string
+          source_query?: string | null
+        }
+        Relationships: []
+      }
       scheduled_days: {
         Row: {
           conversation_summary: string | null
