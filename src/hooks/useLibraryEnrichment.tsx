@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { LibraryItem } from '@/types';
 import { toast } from 'sonner';
@@ -9,9 +9,47 @@ interface EnrichmentResult {
   error?: string;
 }
 
+interface EnrichmentRecord {
+  item_id: string;
+  image_url: string | null;
+}
+
 export function useLibraryEnrichment() {
   const [enrichingItems, setEnrichingItems] = useState<Set<string>>(new Set());
   const [enrichedImages, setEnrichedImages] = useState<Record<string, string>>({});
+  const [loadedFromDb, setLoadedFromDb] = useState(false);
+
+  // Load existing enrichments from database on mount
+  useEffect(() => {
+    async function loadEnrichments() {
+      try {
+        const { data, error } = await supabase
+          .from('library_item_enrichments')
+          .select('item_id, image_url');
+
+        if (error) {
+          console.error('Error loading enrichments:', error);
+          return;
+        }
+
+        if (data && data.length > 0) {
+          const images: Record<string, string> = {};
+          (data as EnrichmentRecord[]).forEach((record) => {
+            if (record.image_url) {
+              images[record.item_id] = record.image_url;
+            }
+          });
+          setEnrichedImages(images);
+        }
+      } catch (error) {
+        console.error('Error loading enrichments:', error);
+      } finally {
+        setLoadedFromDb(true);
+      }
+    }
+
+    loadEnrichments();
+  }, []);
 
   const enrichItem = useCallback(async (item: LibraryItem): Promise<EnrichmentResult> => {
     if (enrichingItems.has(item.id)) {
@@ -23,6 +61,7 @@ export function useLibraryEnrichment() {
     try {
       const { data, error } = await supabase.functions.invoke('enrich-library-item', {
         body: {
+          itemId: item.id,
           title: item.hebrewTitle || item.originalTitle,
           mediaType: item.mediaType,
           creators: item.creators,
@@ -65,5 +104,6 @@ export function useLibraryEnrichment() {
     isEnriching,
     getEnrichedImage,
     enrichingItems,
+    loadedFromDb,
   };
 }
