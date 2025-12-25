@@ -272,47 +272,45 @@ export function ChatPanel({ tasks, events, quickPrompts, libraryItems = [] }: Ch
 
       {/* Header with Persona Selector */}
       <div className="p-4 border-b border-border/50 relative z-10">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 bg-secondary rounded-lg">
-              <Sparkles className="w-4 h-4 text-secondary-foreground" />
-            </div>
-            <div>
-              <h2 className="font-serif text-lg font-medium text-foreground">
-                {persona.name}
-              </h2>
-              <p className="text-xs text-muted-foreground">{persona.subtitle}</p>
-            </div>
+        <div className="flex items-center gap-2 mb-2">
+          <div className="p-1.5 bg-secondary rounded-lg">
+            <Sparkles className="w-4 h-4 text-secondary-foreground" />
           </div>
-          
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="gap-1 text-xs border-border/50 hover:bg-secondary/50"
-              >
-                <span className="font-medium">{persona.name}</span>
-                <ChevronDown className="w-3 h-3" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-popover border border-border shadow-lg z-50">
-              {Object.values(personas).map((p) => (
-                <DropdownMenuItem
-                  key={p.id}
-                  onClick={() => handlePersonaChange(p.id)}
-                  className={cn(
-                    "cursor-pointer",
-                    p.id === selectedPersonaId && "bg-accent"
-                  )}
-                >
-                  <span className="font-medium">{p.name}</span>
-                  <span className="text-xs text-muted-foreground mr-2">- {p.subtitle}</span>
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div>
+            <h2 className="font-serif text-lg font-medium text-foreground">
+              {persona.name}
+            </h2>
+            <p className="text-xs text-muted-foreground">{persona.subtitle}</p>
+          </div>
         </div>
+        
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="gap-1 text-xs border-border/50 hover:bg-secondary/50"
+            >
+              <span className="font-medium">{persona.name}</span>
+              <ChevronDown className="w-3 h-3" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="bg-popover border border-border shadow-lg z-50">
+            {Object.values(personas).map((p) => (
+              <DropdownMenuItem
+                key={p.id}
+                onClick={() => handlePersonaChange(p.id)}
+                className={cn(
+                  "cursor-pointer",
+                  p.id === selectedPersonaId && "bg-accent"
+                )}
+              >
+                <span className="font-medium">{p.name}</span>
+                <span className="text-xs text-muted-foreground mr-2">- {p.subtitle}</span>
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Messages */}
