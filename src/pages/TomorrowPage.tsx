@@ -5,9 +5,10 @@ import { TasksCard } from '@/components/TasksCard';
 import { EventsCard } from '@/components/EventsCard';
 import { ChatPanel } from '@/components/ChatPanel';
 import botanicalFooter from '@/assets/botanical-footer.png';
-import { Task, TaskStatus, TaskPriority, CalendarEvent } from '@/types';
+import { Task, TaskStatus, TaskPriority, CalendarEvent, LibraryItem } from '@/types';
 import { mockMicroseason, quickPrompts } from '@/data/mockData';
 import { useGoogleData } from '@/hooks/useGoogleData';
+import { useLibraryData } from '@/hooks/useLibraryData';
 import { RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
@@ -20,8 +21,11 @@ const GOOGLE_CONFIG = {
   sheetRange: 'tasks!A:E',
 };
 
+const LIBRARY_SPREADSHEET_ID = '18VH_PFbgVD86BCLnin775mkELzGuj--kfLwz1xt9axs';
+
 export default function TomorrowPage() {
   const { loading: dataLoading, error, events: googleEvents, tasks: googleTasks, fetchData } = useGoogleData();
+  const { items: libraryItems } = useLibraryData({ spreadsheetId: LIBRARY_SPREADSHEET_ID });
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
@@ -157,6 +161,7 @@ export default function TomorrowPage() {
               tasks={tasks}
               events={events}
               quickPrompts={quickPrompts}
+              libraryItems={libraryItems}
             />
           </div>
         </main>

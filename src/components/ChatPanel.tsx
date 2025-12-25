@@ -11,6 +11,14 @@ interface ChatPanelProps {
   tasks: Task[];
   events: CalendarEvent[];
   quickPrompts: string[];
+  libraryItems?: Array<{
+    id: string;
+    hebrewTitle: string;
+    originalTitle?: string;
+    mediaType: string;
+    status: string;
+    creators?: string;
+  }>;
 }
 
 // Parse schedule JSON from Atlas response
@@ -70,7 +78,7 @@ function cleanResponseContent(content: string): string {
   return cleaned;
 }
 
-export function ChatPanel({ tasks, events, quickPrompts }: ChatPanelProps) {
+export function ChatPanel({ tasks, events, quickPrompts, libraryItems = [] }: ChatPanelProps) {
   const navigate = useNavigate();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
@@ -143,6 +151,7 @@ export function ChatPanel({ tasks, events, quickPrompts }: ChatPanelProps) {
             messages: updatedMessages,
             tasks,
             events,
+            libraryItems,
           }),
         }
       );
