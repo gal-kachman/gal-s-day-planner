@@ -1,11 +1,18 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChatMessage, Task, CalendarEvent, ScheduleItem } from '@/types';
-import { Send, Sparkles, Check } from 'lucide-react';
+import { Send, Sparkles, Check, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 import botanicalCorner from '@/assets/botanical-corner.png';
+import { personas, defaultPersonaId, Persona } from '@/data/personas';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface ChatPanelProps {
   tasks: Task[];
@@ -21,9 +28,8 @@ interface ChatPanelProps {
   }>;
 }
 
-// Parse schedule JSON from Atlas response
+// Parse schedule JSON from response
 function parseScheduleFromResponse(content: string): ScheduleItem[] | null {
-  // Try to match ```schedule block first
   const codeBlockMatch = content.match(/```schedule\s*([\s\S]*?)```/);
   if (codeBlockMatch) {
     try {
@@ -45,7 +51,6 @@ function parseScheduleFromResponse(content: string): ScheduleItem[] | null {
     }
   }
   
-  // Try to match plain JSON array at the end of the response
   const jsonArrayMatch = content.match(/\n\s*(\[\s*\{[\s\S]*?\}\s*\])\s*$/);
   if (jsonArrayMatch) {
     try {
@@ -69,17 +74,19 @@ function parseScheduleFromResponse(content: string): ScheduleItem[] | null {
   return null;
 }
 
-// Remove schedule JSON block from display content
 function cleanResponseContent(content: string): string {
-  // Remove ```schedule blocks
   let cleaned = content.replace(/```schedule\s*[\s\S]*?```/g, '').trim();
-  // Remove plain JSON array at the end
   cleaned = cleaned.replace(/\n\s*\[\s*\{[\s\S]*?\}\s*\]\s*$/, '').trim();
   return cleaned;
 }
 
+const PERSONA_STORAGE_KEY = 'chief-of-staff-persona';
+
 export function ChatPanel({ tasks, events, quickPrompts, libraryItems = [] }: ChatPanelProps) {
   const navigate = useNavigate();
+  const [selectedPersonaId, setSelectedPersonaId] = useState<string>(() => {
+    return localStorage.getItem(PERSONA_STORAGE_KEY) || defaultPersonaId;
+  });
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -88,10 +95,17 @@ export function ChatPanel({ tasks, events, quickPrompts, libraryItems = [] }: Ch
   const [isSaving, setIsSaving] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Check if data has loaded
+  const persona: Persona = personas[selectedPersonaId] || personas[defaultPersonaId];
   const isDataLoaded = tasks.length > 0 || events.length > 0;
 
-  // Update welcome message when data loads
+  const handlePersonaChange = (newPersonaId: string) => {
+    localStorage.setItem(PERSONA_STORAGE_KEY, newPersonaId);
+    setSelectedPersonaId(newPersonaId);
+    setHasInitialized(false);
+    setMessages([]);
+    setPendingSchedule(null);
+  };
+
   useEffect(() => {
     const activeTasks = tasks.filter((t) => t.status !== 'done').length;
     const eventCount = events.length;
@@ -100,7 +114,7 @@ export function ChatPanel({ tasks, events, quickPrompts, libraryItems = [] }: Ch
       setMessages([{
         id: 'welcome',
         role: 'assistant',
-        content: `ערב טוב. אני אטלס, ראש המטה שלך.\n\nאני רואה **${activeTasks} משימות פעילות** ו-**${eventCount} אירועים** ביומן של מחר. איך אפשר לעזור?`,
+        content: persona.welcomeTemplate(activeTasks, eventCount),
         timestamp: new Date(),
       }]);
       setHasInitialized(true);
@@ -108,11 +122,11 @@ export function ChatPanel({ tasks, events, quickPrompts, libraryItems = [] }: Ch
       setMessages([{
         id: 'welcome',
         role: 'assistant',
-        content: `ערב טוב. אני אטלס, ראש המטה שלך. טוען את המשימות והיומן שלך...`,
+        content: persona.loadingMessage,
         timestamp: new Date(),
       }]);
     }
-  }, [tasks, events, hasInitialized, messages.length, isDataLoaded]);
+  }, [tasks, events, hasInitialized, messages.length, isDataLoaded, persona]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -152,6 +166,7 @@ export function ChatPanel({ tasks, events, quickPrompts, libraryItems = [] }: Ch
             tasks,
             events,
             libraryItems,
+            persona: selectedPersonaId,
           }),
         }
       );
@@ -163,7 +178,6 @@ export function ChatPanel({ tasks, events, quickPrompts, libraryItems = [] }: Ch
 
       const data = await response.json();
       
-      // Check for schedule in response
       const schedule = parseScheduleFromResponse(data.response);
       if (schedule && schedule.length > 0) {
         setPendingSchedule(schedule);
@@ -196,7 +210,6 @@ export function ChatPanel({ tasks, events, quickPrompts, libraryItems = [] }: Ch
 
     setIsSaving(true);
     try {
-      // Get tomorrow's date
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
       const dateStr = tomorrow.toISOString().split('T')[0];
@@ -212,7 +225,7 @@ export function ChatPanel({ tasks, events, quickPrompts, libraryItems = [] }: Ch
           body: JSON.stringify({
             date: dateStr,
             items: pendingSchedule,
-            summary: 'תכנון עם אטלס',
+            summary: persona.saveSummary,
           }),
         }
       );
@@ -229,7 +242,6 @@ export function ChatPanel({ tasks, events, quickPrompts, libraryItems = [] }: Ch
 
       setPendingSchedule(null);
       
-      // Navigate to daily planner with the scheduled date
       setTimeout(() => {
         navigate(`/planner?date=${dateStr}`);
       }, 1000);
@@ -252,25 +264,50 @@ export function ChatPanel({ tasks, events, quickPrompts, libraryItems = [] }: Ch
 
   return (
     <div className="card-botanical flex flex-col h-full relative overflow-hidden">
-      {/* Botanical decoration */}
       <img
         src={botanicalCorner}
         alt=""
         className="botanical-accent absolute -bottom-12 -left-12 w-48 h-48 opacity-15"
       />
 
-      {/* Header */}
+      {/* Header with Persona Selector */}
       <div className="p-4 border-b border-border/50 relative z-10">
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 bg-secondary rounded-lg">
-            <Sparkles className="w-4 h-4 text-secondary-foreground" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 bg-secondary rounded-lg">
+              <Sparkles className="w-4 h-4 text-secondary-foreground" />
+            </div>
+            <div>
+              <h2 className="font-serif text-lg font-medium text-foreground">
+                {persona.name}
+              </h2>
+              <p className="text-xs text-muted-foreground">{persona.subtitle}</p>
+            </div>
           </div>
-          <div>
-            <h2 className="font-serif text-lg font-medium text-foreground">
-              אטלס
-            </h2>
-            <p className="text-xs text-muted-foreground">ראש המטה שלך</p>
-          </div>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="gap-1 text-xs text-muted-foreground">
+                החלף
+                <ChevronDown className="w-3 h-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {Object.values(personas).map((p) => (
+                <DropdownMenuItem
+                  key={p.id}
+                  onClick={() => handlePersonaChange(p.id)}
+                  className={cn(
+                    "cursor-pointer",
+                    p.id === selectedPersonaId && "bg-accent"
+                  )}
+                >
+                  <span className="font-medium">{p.name}</span>
+                  <span className="text-xs text-muted-foreground mr-2">- {p.subtitle}</span>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -291,7 +328,6 @@ export function ChatPanel({ tasks, events, quickPrompts, libraryItems = [] }: Ch
                 message.role === 'user' ? 'chat-user' : 'chat-assistant'
               )}
             >
-              {/* Render markdown-style formatting */}
               <div className={cn("prose prose-sm max-w-none", message.role === 'assistant' && "text-right")} dir={message.role === 'assistant' ? 'rtl' : 'ltr'}>
                 {message.content.split('\n').map((line, i) => (
                   <p key={i} className="mb-1 last:mb-0">
@@ -311,7 +347,6 @@ export function ChatPanel({ tasks, events, quickPrompts, libraryItems = [] }: Ch
           </div>
         ))}
 
-        {/* Typing indicator */}
         {isTyping && (
           <div className="flex justify-start animate-fade-in">
             <div className="chat-assistant px-4 py-3">
@@ -332,7 +367,7 @@ export function ChatPanel({ tasks, events, quickPrompts, libraryItems = [] }: Ch
         <div className="px-4 py-3 border-t border-border/50 bg-secondary/30 relative z-10">
           <div className="flex items-center justify-between gap-3">
             <p className="text-sm text-muted-foreground" dir="rtl">
-              אטלס הכין תכנית עם {pendingSchedule.length} פריטים
+              {persona.confirmButtonText(pendingSchedule.length)}
             </p>
             <Button
               onClick={handleConfirmSchedule}
