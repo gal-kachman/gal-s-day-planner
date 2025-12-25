@@ -287,12 +287,16 @@ export function ChatPanel({ tasks, events, quickPrompts, libraryItems = [] }: Ch
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="gap-1 text-xs text-muted-foreground">
-                החלף
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="gap-1 text-xs border-border/50 hover:bg-secondary/50"
+              >
+                <span className="font-medium">{persona.name}</span>
                 <ChevronDown className="w-3 h-3" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="bg-popover border border-border shadow-lg z-50">
               {Object.values(personas).map((p) => (
                 <DropdownMenuItem
                   key={p.id}
