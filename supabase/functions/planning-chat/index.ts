@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages: chatHistory, tasks, events } = await req.json();
+    const { messages: chatHistory, tasks, events, libraryItems } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
@@ -27,6 +27,17 @@ serve(async (req) => {
     const eventContext = events.map((e: any) => 
       `- ${e.title} at ${e.startTime}${e.endTime ? ` - ${e.endTime}` : ''}`
     ).join('\n');
+
+    // Build culture/library context
+    const libraryContext = libraryItems && libraryItems.length > 0
+      ? libraryItems.map((item: any) => {
+          const parts = [`- ${item.hebrewTitle || item.originalTitle}`];
+          if (item.mediaType) parts.push(`(${item.mediaType})`);
+          if (item.status) parts.push(`[${item.status}]`);
+          if (item.creators) parts.push(`מאת ${item.creators}`);
+          return parts.join(' ');
+        }).join('\n')
+      : null;
 
     const systemPrompt = `
 ## זהות ואישיות
@@ -56,6 +67,22 @@ ${taskContext || 'אין משימות פעילות'}
 
 לוח השנה של מחר:
 ${eventContext || 'אין אירועים מתוכננים'}
+
+${libraryContext ? `## מרכז התרבות (ספרייה)
+
+יש לך גישה לאוסף התרבות שלי - ספרים, סרטים, סדרות, פודקאסטים ומאמרים.
+כשיש רגע פנוי, הפסקה, או כשהמשתמש מחפש המלצה - תוכל להציע פריטים מהרשימה הזו.
+הצע בעדינות, ללא לחץ, כחלק מהמנוחה והטיפוח העצמי.
+
+הרשימה:
+${libraryContext}
+
+דוגמאות לשימוש:
+- "אם יש לך חצי שעה להירגע, אולי זה הזמן להמשיך עם [ספר/סדרה]?"
+- "יום כבד. אולי פרק של [פודקאסט] יעזור לנקות את הראש?"
+- "ראיתי שיש לך את [סרט] ברשימה - אולי בערב?"
+` : ''}
+
 
 ## פילוסופיית התפקיד
 
