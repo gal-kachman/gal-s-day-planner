@@ -159,7 +159,7 @@ async function getFirstSheetName(accessToken: string, spreadsheetId: string): Pr
   return firstSheet || 'Sheet1';
 }
 
-// Fetch tasks from Google Sheet
+// Fetch tasks from Google Sheet (now includes column I for reason_short)
 async function fetchSheetTasks(accessToken: string, spreadsheetId: string, range: string): Promise<any[]> {
   // If range starts with "Sheet1", try to get actual sheet name
   let actualRange = range;
@@ -191,7 +191,7 @@ async function fetchSheetTasks(accessToken: string, spreadsheetId: string, range
   console.log(`Found ${rows.length} rows in sheet`);
   
   // Skip header row if present and map to tasks
-  // Detected columns: Index, Notes, Status, Quadrant, Priority
+  // Columns: A=Index, B=Notes/Title, C=Status, D=Quadrant, E=Priority, F=?, G=?, H=?, I=reason_short
   if (rows.length <= 1) {
     return [];
   }
@@ -213,8 +213,10 @@ async function fetchSheetTasks(accessToken: string, spreadsheetId: string, range
       priority = 'low';
     }
     
+    const rowNumber = index + 2; // +2 because: +1 for 0-indexed, +1 for header row
+    
     return {
-      id: `sheet-${index + 1}`,
+      id: `sheet-${rowNumber}`,
       title: row[1] || 'Untitled Task', // Notes column as title
       notes: undefined,
       status,
@@ -223,6 +225,8 @@ async function fetchSheetTasks(accessToken: string, spreadsheetId: string, range
       dueDate: row[3] || undefined, // Quadrant column
       tags: row[4] ? [row[4]] : undefined, // Priority as tag
       createdAt: new Date().toISOString(),
+      reasonShort: row[8] || undefined, // Column I = index 8
+      rowNumber,
     };
   });
 }
@@ -270,6 +274,40 @@ async function fetchLibraryItems(accessToken: string, spreadsheetId: string, ran
   }));
 }
 
+// Update a specific cell in Google Sheet
+async function updateSheetCell(
+  accessToken: string, 
+  spreadsheetId: string, 
+  sheetName: string,
+  column: string,
+  rowNumber: number, 
+  value: string
+): Promise<void> {
+  const range = `${sheetName}!${column}${rowNumber}`;
+  console.log(`Updating cell ${range} with value: ${value}`);
+  
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}?valueInputOption=RAW`;
+  
+  const response = await fetch(url, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      values: [[value]],
+    }),
+  });
+  
+  if (!response.ok) {
+    const error = await response.text();
+    console.error('Sheets API update error:', error);
+    throw new Error(`Failed to update sheet cell: ${error}`);
+  }
+  
+  console.log(`Successfully updated cell ${range}`);
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -290,12 +328,16 @@ serve(async (req) => {
     const serviceAccount: ServiceAccountKey = JSON.parse(serviceAccountKey);
     console.log(`Using service account: ${serviceAccount.client_email}`);
 
-    const { action, calendarId, spreadsheetId, sheetRange } = await req.json();
+    const { action, calendarId, spreadsheetId, sheetRange, sheetName, column, rowNumber, value } = await req.json();
     
-    const scopes = [
-      'https://www.googleapis.com/auth/calendar.readonly',
-      'https://www.googleapis.com/auth/spreadsheets.readonly',
-    ];
+    // Determine scopes based on action
+    const needsWrite = action === 'updateTask';
+    const scopes = needsWrite
+      ? ['https://www.googleapis.com/auth/spreadsheets']
+      : [
+          'https://www.googleapis.com/auth/calendar.readonly',
+          'https://www.googleapis.com/auth/spreadsheets.readonly',
+        ];
     
     console.log(`Getting access token for scopes: ${scopes.join(', ')}`);
     const accessToken = await getAccessToken(serviceAccount, scopes);
@@ -320,7 +362,7 @@ serve(async (req) => {
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-      result.tasks = await fetchSheetTasks(accessToken, spreadsheetId, sheetRange || 'Sheet1!A:E');
+      result.tasks = await fetchSheetTasks(accessToken, spreadsheetId, sheetRange || 'Sheet1!A:I');
     }
 
     if (action === 'library') {
@@ -331,6 +373,18 @@ serve(async (req) => {
         );
       }
       result.libraryItems = await fetchLibraryItems(accessToken, spreadsheetId, sheetRange || 'culture!A:I');
+    }
+
+    if (action === 'updateTask') {
+      if (!spreadsheetId || !sheetName || !column || !rowNumber || value === undefined) {
+        return new Response(
+          JSON.stringify({ error: 'spreadsheetId, sheetName, column, rowNumber, and value are required for updateTask action' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      await updateSheetCell(accessToken, spreadsheetId, sheetName, column, rowNumber, value);
+      result.success = true;
+      result.message = `Updated ${sheetName}!${column}${rowNumber}`;
     }
 
     console.log('Returning data successfully');
