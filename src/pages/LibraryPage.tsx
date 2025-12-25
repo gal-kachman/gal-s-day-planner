@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useLibraryData } from '@/hooks/useLibraryData';
 import { useLibraryEnrichment } from '@/hooks/useLibraryEnrichment';
@@ -39,10 +39,29 @@ export default function LibraryPage() {
     setSearchQuery,
   } = useLibraryData({ spreadsheetId: SPREADSHEET_ID });
 
-  const { enrichItem, isEnriching, getEnrichedImage } = useLibraryEnrichment();
+  const { enrichItem, isEnriching, getEnrichedImage, loadedFromDb } = useLibraryEnrichment();
 
   const [selectedItem, setSelectedItem] = useState<LibraryItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const autoEnrichStarted = useRef(false);
+
+  // Auto-enrich items without images when data is loaded
+  useEffect(() => {
+    if (!loadedFromDb || isLoading || autoEnrichStarted.current) return;
+    
+    const itemsToEnrich = items.filter(item => !item.imageUrl && !getEnrichedImage(item.id));
+    if (itemsToEnrich.length === 0) return;
+    
+    autoEnrichStarted.current = true;
+    
+    // Enrich items sequentially (up to 5 at a time)
+    const enrichSequentially = async () => {
+      for (const item of itemsToEnrich.slice(0, 5)) {
+        await enrichItem(item);
+      }
+    };
+    enrichSequentially();
+  }, [items, loadedFromDb, isLoading, getEnrichedImage, enrichItem]);
 
   const handleEnrichAll = async () => {
     const itemsWithoutImages = items.filter(item => !item.imageUrl && !getEnrichedImage(item.id));
