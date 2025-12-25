@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChatMessage, Task, CalendarEvent, ScheduleItem } from '@/types';
-import { Send, Sparkles, Check, ChevronDown } from 'lucide-react';
+import { Send, Sparkles, Check, ChevronDown, Moon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 import botanicalCorner from '@/assets/botanical-corner.png';
 import { personas, defaultPersonaId, Persona } from '@/data/personas';
+import { supabase } from '@/integrations/supabase/client';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -74,15 +75,55 @@ function parseScheduleFromResponse(content: string): ScheduleItem[] | null {
   return null;
 }
 
+// Parse UPDATE_TASK markers from AI response
+interface TaskUpdate {
+  taskId: string;
+  field: string;
+  value: string;
+}
+
+function parseTaskUpdates(content: string): TaskUpdate[] {
+  const updates: TaskUpdate[] = [];
+  const regex = /\[UPDATE_TASK:\s*(\{[^}]+\})\]/g;
+  let match;
+  
+  while ((match = regex.exec(content)) !== null) {
+    try {
+      const parsed = JSON.parse(match[1]);
+      if (parsed.taskId && parsed.field && parsed.value !== undefined) {
+        updates.push({
+          taskId: parsed.taskId,
+          field: parsed.field,
+          value: parsed.value,
+        });
+      }
+    } catch (e) {
+      console.error('Failed to parse task update:', e);
+    }
+  }
+  
+  return updates;
+}
+
+// Remove UPDATE_TASK markers from content for display
+function cleanTaskUpdateMarkers(content: string): string {
+  return content.replace(/\[UPDATE_TASK:\s*\{[^}]+\}\]/g, '').trim();
+}
+
 function cleanResponseContent(content: string): string {
   let cleaned = content.replace(/```schedule\s*[\s\S]*?```/g, '').trim();
   cleaned = cleaned.replace(/\n\s*\[\s*\{[\s\S]*?\}\s*\]\s*$/, '').trim();
+  cleaned = cleanTaskUpdateMarkers(cleaned);
   return cleaned;
 }
 
 const PERSONA_STORAGE_KEY = 'chief-of-staff-persona';
 const CHAT_STORAGE_KEY = 'chief-of-staff-chat';
 const CHAT_EXPIRY_MINUTES = 30;
+
+// Google Sheet config for task updates
+const SPREADSHEET_ID = '18VH_PFbgVD86BCLnin775mkELzGuj--kfLwz1xt9axs';
+const TASKS_SHEET_NAME = 'tasks';
 
 interface StoredChat {
   messages: ChatMessage[];
@@ -137,6 +178,18 @@ function saveChat(personaId: string, messages: ChatMessage[], pendingSchedule: S
   } catch (e) {
     console.error('Failed to save chat:', e);
   }
+}
+
+// Map field names to Google Sheet columns
+function getColumnForField(field: string): string {
+  const fieldToColumn: Record<string, string> = {
+    'reasonShort': 'I',
+    'reason_short': 'I',
+    'status': 'C',
+    'priority': 'E',
+    'notes': 'B',
+  };
+  return fieldToColumn[field] || 'I';
 }
 
 export function ChatPanel({ tasks, events, quickPrompts, libraryItems = [] }: ChatPanelProps) {
@@ -213,6 +266,45 @@ export function ChatPanel({ tasks, events, quickPrompts, libraryItems = [] }: Ch
     scrollToBottom();
   }, [messages]);
 
+  // Update Google Sheet with task info
+  const updateTaskInSheet = async (update: TaskUpdate): Promise<boolean> => {
+    try {
+      // Extract row number from taskId (format: "sheet-X")
+      const rowMatch = update.taskId.match(/sheet-(\d+)/);
+      if (!rowMatch) {
+        console.error('Invalid taskId format:', update.taskId);
+        return false;
+      }
+      
+      const rowNumber = parseInt(rowMatch[1], 10);
+      const column = getColumnForField(update.field);
+      
+      console.log(`Updating task ${update.taskId}: ${update.field} = "${update.value}" at ${TASKS_SHEET_NAME}!${column}${rowNumber}`);
+      
+      const { data, error } = await supabase.functions.invoke('google-data', {
+        body: {
+          action: 'updateTask',
+          spreadsheetId: SPREADSHEET_ID,
+          sheetName: TASKS_SHEET_NAME,
+          column,
+          rowNumber,
+          value: update.value,
+        },
+      });
+      
+      if (error) {
+        console.error('Failed to update task in sheet:', error);
+        return false;
+      }
+      
+      console.log('Task updated successfully:', data);
+      return true;
+    } catch (e) {
+      console.error('Error updating task:', e);
+      return false;
+    }
+  };
+
   const handleSend = async (text: string) => {
     if (!text.trim()) return;
 
@@ -254,8 +346,24 @@ export function ChatPanel({ tasks, events, quickPrompts, libraryItems = [] }: Ch
       }
 
       const data = await response.json();
+      const rawResponse = data.response;
       
-      const schedule = parseScheduleFromResponse(data.response);
+      // Parse and execute task updates
+      const taskUpdates = parseTaskUpdates(rawResponse);
+      if (taskUpdates.length > 0) {
+        console.log('Found task updates:', taskUpdates);
+        for (const update of taskUpdates) {
+          const success = await updateTaskInSheet(update);
+          if (success) {
+            toast({
+              title: 'משימה עודכנה',
+              description: `עודכן: ${update.field}`,
+            });
+          }
+        }
+      }
+      
+      const schedule = parseScheduleFromResponse(rawResponse);
       if (schedule && schedule.length > 0) {
         setPendingSchedule(schedule);
       }
@@ -263,7 +371,7 @@ export function ChatPanel({ tasks, events, quickPrompts, libraryItems = [] }: Ch
       const assistantMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: cleanResponseContent(data.response),
+        content: cleanResponseContent(rawResponse),
         timestamp: new Date(),
       };
 
@@ -337,6 +445,10 @@ export function ChatPanel({ tasks, events, quickPrompts, libraryItems = [] }: Ch
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     handleSend(input);
+  };
+
+  const handleDayClosing = () => {
+    handleSend('נעילת יום');
   };
 
   return (
@@ -460,9 +572,19 @@ export function ChatPanel({ tasks, events, quickPrompts, libraryItems = [] }: Ch
         </div>
       )}
 
-      {/* Quick prompts */}
+      {/* Quick prompts with Day Closing button */}
       <div className="px-4 pb-2 relative z-10">
         <div className="flex flex-wrap gap-2">
+          {/* Day Closing Button - prominently styled */}
+          <button
+            onClick={handleDayClosing}
+            className="quick-prompt bg-primary/10 border-primary/30 hover:bg-primary/20 hover:border-primary/50 flex items-center gap-1.5"
+            disabled={isTyping || !isDataLoaded}
+          >
+            <Moon className="w-3.5 h-3.5" />
+            נעילת יום
+          </button>
+          
           {quickPrompts.map((prompt) => (
             <button
               key={prompt}

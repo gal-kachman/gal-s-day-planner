@@ -11,6 +11,8 @@ export interface Task {
   dueDate?: string;
   tags?: string[];
   createdAt?: string;
+  reasonShort?: string;
+  rowNumber?: number; // Original row number in Google Sheet for updates
 }
 
 export interface CalendarEvent {
