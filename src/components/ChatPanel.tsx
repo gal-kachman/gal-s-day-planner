@@ -81,6 +81,63 @@ function cleanResponseContent(content: string): string {
 }
 
 const PERSONA_STORAGE_KEY = 'chief-of-staff-persona';
+const CHAT_STORAGE_KEY = 'chief-of-staff-chat';
+const CHAT_EXPIRY_MINUTES = 30;
+
+interface StoredChat {
+  messages: ChatMessage[];
+  lastUpdated: number;
+  personaId: string;
+  pendingSchedule: ScheduleItem[] | null;
+}
+
+function getChatStorageKey(personaId: string): string {
+  const today = new Date().toDateString();
+  return `${CHAT_STORAGE_KEY}_${personaId}_${today}`;
+}
+
+function loadStoredChat(personaId: string): StoredChat | null {
+  try {
+    const key = getChatStorageKey(personaId);
+    const stored = localStorage.getItem(key);
+    if (!stored) return null;
+    
+    const parsed: StoredChat = JSON.parse(stored);
+    const now = Date.now();
+    const minutesElapsed = (now - parsed.lastUpdated) / (1000 * 60);
+    
+    if (minutesElapsed > CHAT_EXPIRY_MINUTES) {
+      localStorage.removeItem(key);
+      return null;
+    }
+    
+    // Restore Date objects
+    parsed.messages = parsed.messages.map(m => ({
+      ...m,
+      timestamp: new Date(m.timestamp)
+    }));
+    
+    return parsed;
+  } catch (e) {
+    console.error('Failed to load stored chat:', e);
+    return null;
+  }
+}
+
+function saveChat(personaId: string, messages: ChatMessage[], pendingSchedule: ScheduleItem[] | null): void {
+  try {
+    const key = getChatStorageKey(personaId);
+    const data: StoredChat = {
+      messages,
+      lastUpdated: Date.now(),
+      personaId,
+      pendingSchedule
+    };
+    localStorage.setItem(key, JSON.stringify(data));
+  } catch (e) {
+    console.error('Failed to save chat:', e);
+  }
+}
 
 export function ChatPanel({ tasks, events, quickPrompts, libraryItems = [] }: ChatPanelProps) {
   const navigate = useNavigate();
@@ -98,6 +155,23 @@ export function ChatPanel({ tasks, events, quickPrompts, libraryItems = [] }: Ch
   const persona: Persona = personas[selectedPersonaId] || personas[defaultPersonaId];
   const isDataLoaded = tasks.length > 0 || events.length > 0;
 
+  // Load stored chat on mount or persona change
+  useEffect(() => {
+    const storedChat = loadStoredChat(selectedPersonaId);
+    if (storedChat && storedChat.messages.length > 0) {
+      setMessages(storedChat.messages);
+      setPendingSchedule(storedChat.pendingSchedule);
+      setHasInitialized(true);
+    }
+  }, [selectedPersonaId]);
+
+  // Save chat whenever messages or pendingSchedule change
+  useEffect(() => {
+    if (hasInitialized && messages.length > 0) {
+      saveChat(selectedPersonaId, messages, pendingSchedule);
+    }
+  }, [messages, pendingSchedule, selectedPersonaId, hasInitialized]);
+
   const handlePersonaChange = (newPersonaId: string) => {
     localStorage.setItem(PERSONA_STORAGE_KEY, newPersonaId);
     setSelectedPersonaId(newPersonaId);
@@ -110,7 +184,10 @@ export function ChatPanel({ tasks, events, quickPrompts, libraryItems = [] }: Ch
     const activeTasks = tasks.filter((t) => t.status !== 'done').length;
     const eventCount = events.length;
     
-    if (!hasInitialized && isDataLoaded) {
+    // Skip welcome message if we loaded from storage
+    if (hasInitialized) return;
+    
+    if (isDataLoaded) {
       setMessages([{
         id: 'welcome',
         role: 'assistant',
@@ -118,7 +195,7 @@ export function ChatPanel({ tasks, events, quickPrompts, libraryItems = [] }: Ch
         timestamp: new Date(),
       }]);
       setHasInitialized(true);
-    } else if (!hasInitialized && messages.length === 0) {
+    } else if (messages.length === 0) {
       setMessages([{
         id: 'welcome',
         role: 'assistant',
