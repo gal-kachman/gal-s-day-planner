@@ -1,10 +1,13 @@
 import { LibraryItem } from '@/types';
 import { cn } from '@/lib/utils';
-import { BookOpen, Film, Tv, Podcast, FileText } from 'lucide-react';
+import { BookOpen, Film, Tv, Podcast, FileText, ImagePlus, Loader2 } from 'lucide-react';
 
 interface BookSpineProps {
   item: LibraryItem;
   onClick: () => void;
+  enrichedImage?: string;
+  isEnriching?: boolean;
+  onEnrich?: () => void;
 }
 
 // Color mapping for different media types
@@ -26,10 +29,11 @@ const mediaTypeIcons: Record<string, typeof BookOpen> = {
 
 const defaultColors = { bg: 'bg-library-default', border: 'border-library-default-dark' };
 
-export function BookSpine({ item, onClick }: BookSpineProps) {
+export function BookSpine({ item, onClick, enrichedImage, isEnriching, onEnrich }: BookSpineProps) {
   const colors = mediaTypeColors[item.mediaType] || defaultColors;
   const MediaIcon = mediaTypeIcons[item.mediaType] || BookOpen;
-  const hasImage = !!item.imageUrl;
+  const displayImage = enrichedImage || item.imageUrl;
+  const hasImage = !!displayImage;
   
   return (
     <button
@@ -47,7 +51,7 @@ export function BookSpine({ item, onClick }: BookSpineProps) {
       {/* Cover image or placeholder */}
       {hasImage ? (
         <img 
-          src={item.imageUrl} 
+          src={displayImage} 
           alt={item.hebrewTitle}
           className="absolute inset-0 w-full h-full object-cover"
         />
@@ -58,7 +62,11 @@ export function BookSpine({ item, onClick }: BookSpineProps) {
         )}>
           {/* Decorative pattern for non-image covers */}
           <div className="absolute inset-0 opacity-20 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+CjxyZWN0IHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgZmlsbD0idHJhbnNwYXJlbnQiPjwvcmVjdD4KPGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMiIgZmlsbD0iI2ZmZiIgZmlsbC1vcGFjaXR5PSIwLjMiPjwvY2lyY2xlPgo8L3N2Zz4=')]" />
-          <MediaIcon className="h-12 w-12 text-library-gold/70 mb-3" />
+          {isEnriching ? (
+            <Loader2 className="h-12 w-12 text-library-gold/70 mb-3 animate-spin" />
+          ) : (
+            <MediaIcon className="h-12 w-12 text-library-gold/70 mb-3" />
+          )}
         </div>
       )}
       
@@ -84,6 +92,25 @@ export function BookSpine({ item, onClick }: BookSpineProps) {
       )}>
         {item.mediaType}
       </div>
+      
+      {/* Enrich button for items without images */}
+      {!hasImage && onEnrich && !isEnriching && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onEnrich();
+          }}
+          className={cn(
+            'absolute top-2 left-2 p-1.5 rounded',
+            'bg-library-gold/80 text-library-wood hover:bg-library-gold',
+            'transition-all duration-200 opacity-0 group-hover:opacity-100',
+            'backdrop-blur-sm'
+          )}
+          title="חפש תמונה"
+        >
+          <ImagePlus className="h-4 w-4" />
+        </button>
+      )}
       
       {/* Subtle border frame */}
       <div className="absolute inset-0 border-2 border-library-wood/30 rounded-sm pointer-events-none" />

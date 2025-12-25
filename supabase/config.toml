@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.sync-completed-tasks]
 verify_jwt = false
+
+[functions.enrich-library-item]
+verify_jwt = false
