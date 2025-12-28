@@ -1,13 +1,13 @@
 project_id = "oltleppgnjmxggentltm"
 
 [functions.google-data]
-verify_jwt = true
+verify_jwt = false
 
 [functions.planning-chat]
-verify_jwt = true
+verify_jwt = false
 
 [functions.save-schedule]
-verify_jwt = true
+verify_jwt = false
 
 [functions.enrich-library-item]
-verify_jwt = true
+verify_jwt = false

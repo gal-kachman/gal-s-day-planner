@@ -4,10 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
-import { AuthProvider } from "@/hooks/useAuth";
-import { ProtectedRoute } from "@/components/ProtectedRoute";
 import TomorrowPage from "./pages/TomorrowPage";
-import AuthPage from "./pages/AuthPage";
 import DailyPlannerPage from "./pages/DailyPlannerPage";
 import LibraryPage from "./pages/LibraryPage";
 import NotFound from "./pages/NotFound";
@@ -20,17 +17,14 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <BrowserRouter>
-            <AuthProvider>
-              <Toaster />
-              <Sonner />
-              <Routes>
-                <Route path="/" element={<ProtectedRoute><TomorrowPage /></ProtectedRoute>} />
-                <Route path="/planner" element={<ProtectedRoute><DailyPlannerPage /></ProtectedRoute>} />
-                <Route path="/library" element={<ProtectedRoute><LibraryPage /></ProtectedRoute>} />
-                <Route path="/auth" element={<AuthPage />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </AuthProvider>
+            <Toaster />
+            <Sonner />
+            <Routes>
+              <Route path="/" element={<TomorrowPage />} />
+              <Route path="/planner" element={<DailyPlannerPage />} />
+              <Route path="/library" element={<LibraryPage />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
           </BrowserRouter>
         </TooltipProvider>
       </QueryClientProvider>

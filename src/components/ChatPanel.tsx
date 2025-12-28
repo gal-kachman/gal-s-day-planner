@@ -322,38 +322,20 @@ export function ChatPanel({ tasks, events, quickPrompts, libraryItems = [] }: Ch
     setPendingSchedule(null);
 
     try {
-      // Get session for JWT auth
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast({ title: 'נדרשת התחברות', variant: 'destructive' });
-        navigate('/auth');
-        return;
+      const { data, error } = await supabase.functions.invoke('planning-chat', {
+        body: {
+          messages: updatedMessages,
+          tasks,
+          events,
+          libraryItems,
+          persona: selectedPersonaId,
+        },
+      });
+
+      if (error) {
+        throw new Error(error.message || 'Failed to get AI response');
       }
 
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/planning-chat`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({
-            messages: updatedMessages,
-            tasks,
-            events,
-            libraryItems,
-            persona: selectedPersonaId,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to get AI response');
-      }
-
-      const data = await response.json();
       const rawResponse = data.response;
       
       // Parse and execute task updates
@@ -407,32 +389,16 @@ export function ChatPanel({ tasks, events, quickPrompts, libraryItems = [] }: Ch
       tomorrow.setDate(tomorrow.getDate() + 1);
       const dateStr = tomorrow.toISOString().split('T')[0];
 
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast({ title: 'נדרשת התחברות', variant: 'destructive' });
-        navigate('/auth');
-        return;
-      }
+      const { error } = await supabase.functions.invoke('save-schedule', {
+        body: {
+          date: dateStr,
+          items: pendingSchedule,
+          summary: persona.saveSummary,
+        },
+      });
 
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/save-schedule`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({
-            date: dateStr,
-            items: pendingSchedule,
-            summary: persona.saveSummary,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to save schedule');
+      if (error) {
+        throw new Error(error.message || 'Failed to save schedule');
       }
 
       toast({

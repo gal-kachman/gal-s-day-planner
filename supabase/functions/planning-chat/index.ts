@@ -523,16 +523,6 @@ serve(async (req) => {
   }
 
   try {
-    // Validate authentication
-    const { userId, error: authError } = await validateAuth(req);
-    if (authError) {
-      console.error('Authentication failed:', authError);
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
     // Parse and validate input
     const rawBody = await req.json();
     const parseResult = PlanningChatSchema.safeParse(rawBody);
@@ -552,7 +542,7 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    console.log(`User ${userId} using ${persona} persona for planning chat`);
+    console.log(`Using ${persona} persona for planning chat`);
 
     // Build context from tasks and events (with sanitization)
     const activeTasks = tasks.filter((t) => t.status !== 'done');
