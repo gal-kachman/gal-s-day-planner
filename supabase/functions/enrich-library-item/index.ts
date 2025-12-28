@@ -130,16 +130,6 @@ serve(async (req) => {
   }
 
   try {
-    // Validate authentication
-    const { userId, error: authError } = await validateAuth(req);
-    if (authError) {
-      console.error('Authentication failed:', authError);
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
     // Parse and validate input
     const rawBody = await req.json();
     const parseResult = EnrichmentSchema.safeParse(rawBody);
@@ -154,7 +144,7 @@ serve(async (req) => {
 
     const { itemId, title, mediaType, creators } = parseResult.data;
 
-    console.log(`User ${userId} enriching item: ${itemId}`);
+    console.log(`Enriching item: ${itemId}`);
 
     const firecrawlKey = Deno.env.get('FIRECRAWL_API_KEY');
     if (!firecrawlKey) {

@@ -52,16 +52,6 @@ serve(async (req) => {
   }
 
   try {
-    // Validate authentication
-    const { userId, error: authError } = await validateAuth(req);
-    if (authError) {
-      console.error('Authentication failed:', authError);
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
     // Parse and validate input
     const rawBody = await req.json();
     const parseResult = SaveScheduleSchema.safeParse(rawBody);
@@ -80,7 +70,7 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    console.log(`User ${userId} saving schedule for date: ${date} with ${items.length} items`);
+    console.log(`Saving schedule for date: ${date} with ${items.length} items`);
 
     // Create scheduled_day record
     const { data: scheduledDay, error: dayError } = await supabase

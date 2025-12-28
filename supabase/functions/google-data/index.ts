@@ -351,16 +351,6 @@ serve(async (req) => {
   }
 
   try {
-    // Validate authentication
-    const { userId, error: authError } = await validateAuth(req);
-    if (authError) {
-      console.error('Authentication failed:', authError);
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
     const serviceAccountKey = Deno.env.get('GOOGLE_SERVICE_ACCOUNT_KEY');
     
     if (!serviceAccountKey) {
@@ -372,7 +362,7 @@ serve(async (req) => {
     }
 
     const serviceAccount: ServiceAccountKey = JSON.parse(serviceAccountKey);
-    console.log(`User ${userId} using service account: ${serviceAccount.client_email}`);
+    console.log(`Using service account: ${serviceAccount.client_email}`);
 
     // Parse and validate input
     const rawBody = await req.json();
