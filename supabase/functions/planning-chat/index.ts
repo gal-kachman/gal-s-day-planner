@@ -1,9 +1,82 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Input validation schemas
+const MessageSchema = z.object({
+  id: z.string().optional(),
+  role: z.enum(['user', 'assistant']),
+  content: z.string().min(1).max(10000),
+  timestamp: z.any().optional(),
+});
+
+const TaskSchema = z.object({
+  id: z.string(),
+  title: z.string().max(500),
+  status: z.string().optional(),
+  priority: z.string().optional(),
+  estimatedMinutes: z.number().optional(),
+  reasonShort: z.string().optional(),
+  rowNumber: z.number().optional(),
+}).passthrough();
+
+const EventSchema = z.object({
+  id: z.string(),
+  title: z.string().max(500),
+  startTime: z.string().optional(),
+  endTime: z.string().optional(),
+}).passthrough();
+
+const LibraryItemSchema = z.object({
+  id: z.string(),
+  hebrewTitle: z.string().optional(),
+  originalTitle: z.string().optional(),
+  mediaType: z.string().optional(),
+  status: z.string().optional(),
+  creators: z.string().optional(),
+}).passthrough();
+
+const PlanningChatSchema = z.object({
+  messages: z.array(MessageSchema).max(100),
+  tasks: z.array(TaskSchema).max(500),
+  events: z.array(EventSchema).max(200),
+  libraryItems: z.array(LibraryItemSchema).max(1000).optional(),
+  persona: z.enum(['atlas', 'barbara']).default('atlas'),
+});
+
+// Validate authentication
+async function validateAuth(req: Request): Promise<{ userId: string | null; error: string | null }> {
+  const authHeader = req.headers.get('Authorization');
+  
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return { userId: null, error: 'Missing or invalid authorization header' };
+  }
+  
+  const token = authHeader.replace('Bearer ', '');
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+  const supabase = createClient(supabaseUrl, supabaseAnonKey);
+  
+  const { data: { user }, error } = await supabase.auth.getUser(token);
+  
+  if (error || !user) {
+    return { userId: null, error: 'Invalid or expired token' };
+  }
+  
+  return { userId: user.id, error: null };
+}
+
+// Sanitize text for AI context
+function sanitizeForContext(text: string): string {
+  return text
+    .replace(/[\x00-\x1F\x7F]/g, '') // Remove control characters
+    .slice(0, 10000);
+}
 
 // Atlas system prompt
 const getAtlasPrompt = (taskContext: string, eventContext: string, libraryContext: string | null) => `
@@ -222,7 +295,7 @@ ${libraryContext ? `## מרכז התרבות (ספרייה)
 
 יש לך גישה לאוסף התרבות שלו - ספרים, סרטים, סדרות, פודקאסטים ומאמרים.
 כשיש רגע פנוי, הפסקה, או כשהמשתמש מחפש המלצה - תוכלי להציע פריטים מהרשימה הזו.
-הצעי בסגנון שלך - ציני אבל אכפתי.
+הציעי בסגנון שלך - ציני אבל אכפתי.
 
 הרשימה:
 ${libraryContext}
@@ -450,32 +523,56 @@ serve(async (req) => {
   }
 
   try {
-    const { messages: chatHistory, tasks, events, libraryItems, persona = 'atlas' } = await req.json();
+    // Validate authentication
+    const { userId, error: authError } = await validateAuth(req);
+    if (authError) {
+      console.error('Authentication failed:', authError);
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Parse and validate input
+    const rawBody = await req.json();
+    const parseResult = PlanningChatSchema.safeParse(rawBody);
+    
+    if (!parseResult.success) {
+      console.error('Validation failed:', parseResult.error.errors);
+      return new Response(
+        JSON.stringify({ error: 'Invalid input', details: parseResult.error.errors }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const { messages: chatHistory, tasks, events, libraryItems, persona } = parseResult.data;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    // Build context from tasks and events
-    const activeTasks = tasks.filter((t: any) => t.status !== 'done');
-    const taskContext = activeTasks.map((t: any) => 
+    console.log(`User ${userId} using ${persona} persona for planning chat`);
+
+    // Build context from tasks and events (with sanitization)
+    const activeTasks = tasks.filter((t) => t.status !== 'done');
+    const taskContext = sanitizeForContext(activeTasks.map((t) => 
       `- ${t.title} (${t.priority} priority, ${t.status}, est: ${t.estimatedMinutes || '?'} min)`
-    ).join('\n');
+    ).join('\n'));
     
-    const eventContext = events.map((e: any) => 
+    const eventContext = sanitizeForContext(events.map((e) => 
       `- ${e.title} at ${e.startTime}${e.endTime ? ` - ${e.endTime}` : ''}`
-    ).join('\n');
+    ).join('\n'));
 
     // Build culture/library context
     const libraryContext = libraryItems && libraryItems.length > 0
-      ? libraryItems.map((item: any) => {
+      ? sanitizeForContext(libraryItems.map((item) => {
           const parts = [`- ${item.hebrewTitle || item.originalTitle}`];
           if (item.mediaType) parts.push(`(${item.mediaType})`);
           if (item.status) parts.push(`[${item.status}]`);
           if (item.creators) parts.push(`מאת ${item.creators}`);
           return parts.join(' ');
-        }).join('\n')
+        }).join('\n'))
       : null;
 
     // Select system prompt based on persona
@@ -483,14 +580,12 @@ serve(async (req) => {
       ? getBarbaraPrompt(taskContext, eventContext, libraryContext)
       : getAtlasPrompt(taskContext, eventContext, libraryContext);
 
-    console.log(`Using ${persona} persona for planning chat`);
-
     // Convert chat history to API format (exclude welcome message)
     const conversationMessages = chatHistory
-      .filter((m: any) => m.id !== 'welcome')
-      .map((m: any) => ({
+      .filter((m) => m.id !== 'welcome')
+      .map((m) => ({
         role: m.role,
-        content: m.content,
+        content: sanitizeForContext(m.content),
       }));
 
     console.log('Sending request to Lovable AI with', conversationMessages.length, 'messages in history');
