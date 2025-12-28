@@ -1,10 +1,24 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Input validation schema
+const GoogleDataSchema = z.object({
+  action: z.enum(['calendar', 'tasks', 'library', 'updateTask', 'all']),
+  calendarId: z.string().max(200).optional(),
+  spreadsheetId: z.string().max(200).optional(),
+  sheetRange: z.string().max(100).optional(),
+  sheetName: z.string().max(100).optional(),
+  column: z.string().regex(/^[A-Z]+$/).optional(),
+  rowNumber: z.number().int().positive().max(10000).optional(),
+  value: z.string().max(1000).optional(),
+});
 
 interface ServiceAccountKey {
   type: string;
@@ -17,6 +31,28 @@ interface ServiceAccountKey {
   token_uri: string;
   auth_provider_x509_cert_url: string;
   client_x509_cert_url: string;
+}
+
+// Validate authentication
+async function validateAuth(req: Request): Promise<{ userId: string | null; error: string | null }> {
+  const authHeader = req.headers.get('Authorization');
+  
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return { userId: null, error: 'Missing or invalid authorization header' };
+  }
+  
+  const token = authHeader.replace('Bearer ', '');
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+  const supabase = createClient(supabaseUrl, supabaseAnonKey);
+  
+  const { data: { user }, error } = await supabase.auth.getUser(token);
+  
+  if (error || !user) {
+    return { userId: null, error: 'Invalid or expired token' };
+  }
+  
+  return { userId: user.id, error: null };
 }
 
 // Create a JWT for service account authentication
@@ -315,6 +351,16 @@ serve(async (req) => {
   }
 
   try {
+    // Validate authentication
+    const { userId, error: authError } = await validateAuth(req);
+    if (authError) {
+      console.error('Authentication failed:', authError);
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const serviceAccountKey = Deno.env.get('GOOGLE_SERVICE_ACCOUNT_KEY');
     
     if (!serviceAccountKey) {
@@ -326,9 +372,21 @@ serve(async (req) => {
     }
 
     const serviceAccount: ServiceAccountKey = JSON.parse(serviceAccountKey);
-    console.log(`Using service account: ${serviceAccount.client_email}`);
+    console.log(`User ${userId} using service account: ${serviceAccount.client_email}`);
 
-    const { action, calendarId, spreadsheetId, sheetRange, sheetName, column, rowNumber, value } = await req.json();
+    // Parse and validate input
+    const rawBody = await req.json();
+    const parseResult = GoogleDataSchema.safeParse(rawBody);
+    
+    if (!parseResult.success) {
+      console.error('Validation failed:', parseResult.error.errors);
+      return new Response(
+        JSON.stringify({ error: 'Invalid input', details: parseResult.error.errors }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const { action, calendarId, spreadsheetId, sheetRange, sheetName, column, rowNumber, value } = parseResult.data;
     
     // Determine scopes based on action
     const needsWrite = action === 'updateTask';

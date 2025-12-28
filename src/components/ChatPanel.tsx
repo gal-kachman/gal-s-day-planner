@@ -322,13 +322,21 @@ export function ChatPanel({ tasks, events, quickPrompts, libraryItems = [] }: Ch
     setPendingSchedule(null);
 
     try {
+      // Get session for JWT auth
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({ title: 'נדרשת התחברות', variant: 'destructive' });
+        navigate('/auth');
+        return;
+      }
+
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/planning-chat`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            'Authorization': `Bearer ${session.access_token}`,
           },
           body: JSON.stringify({
             messages: updatedMessages,
@@ -399,13 +407,20 @@ export function ChatPanel({ tasks, events, quickPrompts, libraryItems = [] }: Ch
       tomorrow.setDate(tomorrow.getDate() + 1);
       const dateStr = tomorrow.toISOString().split('T')[0];
 
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({ title: 'נדרשת התחברות', variant: 'destructive' });
+        navigate('/auth');
+        return;
+      }
+
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/save-schedule`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            'Authorization': `Bearer ${session.access_token}`,
           },
           body: JSON.stringify({
             date: dateStr,
