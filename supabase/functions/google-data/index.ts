@@ -234,12 +234,22 @@ async function fetchSheetTasks(accessToken: string, spreadsheetId: string, range
     return [];
   }
   
-  // Filter out completed tasks and map to Task format
+  // Filter out completed tasks and rows without titles, then map to Task format
   return rows.slice(1)
-    .map((row: string[], index: number) => {
-      const rowNumber = index + 2; // +2 because: +1 for 0-indexed, +1 for header row
+    .filter((row: string[]) => {
+      // Filter out rows without a title in column B
+      const title = row[1]?.trim();
+      if (!title) return false;
+      
+      // Filter out completed tasks
       const completionValue = row[9]?.toUpperCase() || '';
       const isCompleted = completionValue === 'TRUE' || completionValue === '✓' || completionValue === 'YES';
+      return !isCompleted;
+    })
+    .map((row: string[], _filteredIndex: number, _arr: string[][]) => {
+      // Calculate original row number by finding this row in the original array
+      const originalIndex = rows.slice(1).findIndex((r: string[]) => r === row);
+      const rowNumber = originalIndex + 2; // +2 because: +1 for 0-indexed, +1 for header row
       
       // Parse priority rank (column F) to priority level
       const priorityRank = parseInt(row[5] || '0', 10);
@@ -252,7 +262,7 @@ async function fetchSheetTasks(accessToken: string, spreadsheetId: string, range
       return {
         id: `sheet-${rowNumber}`,
         taskId: row[0] || '', // Column A
-        title: row[1] || 'Untitled Task', // Column B
+        title: row[1].trim(), // Column B (already validated)
         dueDate: row[2] || undefined, // Column C
         clarifiedNextAction: row[3] || undefined, // Column D
         eisenhowerQuadrant: row[4] || undefined, // Column E
@@ -260,13 +270,12 @@ async function fetchSheetTasks(accessToken: string, spreadsheetId: string, range
         delegateTo: row[6] || undefined, // Column G
         reasonShort: row[7] || undefined, // Column H
         createdAt: row[8] || undefined, // Column I
-        completion: isCompleted, // Column J
+        completion: false, // Already filtered out completed
         completionTimestamp: row[10] || undefined, // Column K
         priority,
         rowNumber,
       };
-    })
-    .filter((task: any) => !task.completion && task.title && task.title !== 'Untitled Task'); // Only return uncompleted tasks with titles
+    });
 }
 
 // Fetch library items from Google Sheet (culture tab)
