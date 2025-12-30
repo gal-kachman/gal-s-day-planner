@@ -112,33 +112,6 @@ export type Database = {
           },
         ]
       }
-      task_completions: {
-        Row: {
-          completed_at: string | null
-          id: string
-          notes: string | null
-          original_task_id: string | null
-          priority: string | null
-          task_title: string
-        }
-        Insert: {
-          completed_at?: string | null
-          id?: string
-          notes?: string | null
-          original_task_id?: string | null
-          priority?: string | null
-          task_title: string
-        }
-        Update: {
-          completed_at?: string | null
-          id?: string
-          notes?: string | null
-          original_task_id?: string | null
-          priority?: string | null
-          task_title?: string
-        }
-        Relationships: []
-      }
     }
     Views: {
       [_ in never]: never
