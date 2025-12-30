@@ -1,17 +1,22 @@
-export type TaskStatus = 'todo' | 'doing' | 'done';
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
 
 export interface Task {
   id: string;
-  title: string;
-  notes?: string;
-  status: TaskStatus;
+  taskId: string; // Column A - original task ID from sheet
+  title: string; // Column B
+  dueDate?: string; // Column C
+  clarifiedNextAction?: string; // Column D
+  eisenhowerQuadrant?: string; // Column E
+  priorityRank?: number; // Column F
+  delegateTo?: string; // Column G
+  reasonShort?: string; // Column H
+  createdAt?: string; // Column I
+  completion: boolean; // Column J - checkbox
+  completionTimestamp?: string; // Column K
   priority: TaskPriority;
+  notes?: string;
   estimatedMinutes?: number;
-  dueDate?: string;
   tags?: string[];
-  createdAt?: string;
-  reasonShort?: string;
   rowNumber?: number; // Original row number in Google Sheet for updates
 }
 

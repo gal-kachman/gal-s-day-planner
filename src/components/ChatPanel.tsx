@@ -234,7 +234,7 @@ export function ChatPanel({ tasks, events, quickPrompts, libraryItems = [] }: Ch
   };
 
   useEffect(() => {
-    const activeTasks = tasks.filter((t) => t.status !== 'done').length;
+    const activeTasks = tasks.filter((t) => !t.completion).length;
     const eventCount = events.length;
     
     // Skip welcome message if we loaded from storage

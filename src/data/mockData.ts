@@ -13,9 +13,10 @@ const tomorrowStr = tomorrow.toISOString().split('T')[0];
 export const mockTasks: Task[] = [
   {
     id: '1',
+    taskId: 'task-1',
     title: 'Review quarterly OKRs and prepare summary',
     notes: 'Focus on Q4 targets and blockers',
-    status: 'todo',
+    completion: false,
     priority: 'high',
     estimatedMinutes: 45,
     dueDate: tomorrowStr,
@@ -24,9 +25,10 @@ export const mockTasks: Task[] = [
   },
   {
     id: '2',
+    taskId: 'task-2',
     title: 'Draft investor update email',
     notes: 'Include metrics from dashboard',
-    status: 'doing',
+    completion: false,
     priority: 'urgent',
     estimatedMinutes: 60,
     dueDate: tomorrowStr,
@@ -35,8 +37,9 @@ export const mockTasks: Task[] = [
   },
   {
     id: '3',
+    taskId: 'task-3',
     title: 'Schedule 1:1s with direct reports',
-    status: 'todo',
+    completion: false,
     priority: 'medium',
     estimatedMinutes: 20,
     tags: ['team'],
@@ -44,9 +47,10 @@ export const mockTasks: Task[] = [
   },
   {
     id: '4',
+    taskId: 'task-4',
     title: 'Review design mockups for new feature',
     notes: 'Focus on mobile experience',
-    status: 'todo',
+    completion: false,
     priority: 'medium',
     estimatedMinutes: 30,
     tags: ['product', 'design'],
@@ -54,8 +58,9 @@ export const mockTasks: Task[] = [
   },
   {
     id: '5',
+    taskId: 'task-5',
     title: 'Prepare board deck slides 3-7',
-    status: 'todo',
+    completion: false,
     priority: 'high',
     estimatedMinutes: 90,
     dueDate: tomorrowStr,
@@ -64,8 +69,9 @@ export const mockTasks: Task[] = [
   },
   {
     id: '6',
+    taskId: 'task-6',
     title: 'Clear inbox to zero',
-    status: 'todo',
+    completion: false,
     priority: 'low',
     estimatedMinutes: 25,
     tags: ['admin'],
