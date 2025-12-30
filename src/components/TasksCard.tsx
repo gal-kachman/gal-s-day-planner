@@ -1,14 +1,16 @@
 import { useState } from 'react';
-import { Task, TaskStatus, TaskPriority } from '@/types';
-import { Check, Circle, Loader2, Plus, Clock, Search } from 'lucide-react';
+import { Task, TaskPriority } from '@/types';
+import { Check, Circle, Plus, Clock, Search, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface TasksCardProps {
   tasks: Task[];
-  onStatusChange: (taskId: string, status: TaskStatus) => void;
+  onCompletionChange: (taskId: string, completed: boolean, rowNumber?: number) => void;
   onPriorityChange: (taskId: string, priority: TaskPriority) => void;
   onEstimateChange: (taskId: string, minutes: number) => void;
   onAddTask: (title: string) => void;
+  isUpdating?: string; // taskId currently being updated
 }
 
 const priorityConfig: Record<TaskPriority, { label: string; className: string; dotColor: string }> = {
@@ -18,18 +20,13 @@ const priorityConfig: Record<TaskPriority, { label: string; className: string; d
   low: { label: 'נמוך', className: 'priority-low', dotColor: 'bg-priority-low' },
 };
 
-const statusIcons: Record<TaskStatus, React.ReactNode> = {
-  todo: <Circle className="w-4 h-4" />,
-  doing: <Loader2 className="w-4 h-4 animate-spin" />,
-  done: <Check className="w-4 h-4" />,
-};
-
 export function TasksCard({
   tasks,
-  onStatusChange,
+  onCompletionChange,
   onPriorityChange,
   onEstimateChange,
   onAddTask,
+  isUpdating,
 }: TasksCardProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [newTaskTitle, setNewTaskTitle] = useState('');
@@ -41,12 +38,6 @@ export function TasksCard({
       task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       task.tags?.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()))
     );
-
-  const handleStatusCycle = (task: Task) => {
-    // Simple toggle: todo -> done, doing -> done, done -> todo
-    const nextStatus: TaskStatus = task.status === 'done' ? 'todo' : 'done';
-    onStatusChange(task.id, nextStatus);
-  };
 
   const handlePriorityCycle = (task: Task) => {
     const priorityOrder: TaskPriority[] = ['low', 'medium', 'high', 'urgent'];
@@ -102,94 +93,114 @@ export function TasksCard({
       {/* Task list */}
       <div className="flex-1 overflow-y-auto scrollbar-thin p-2">
         <ul className="space-y-1">
-          {filteredTasks.map((task, index) => (
-            <li
-              key={task.id}
-              className="group p-3 rounded-lg hover:bg-muted/50 transition-colors animate-fade-in"
-              style={{ animationDelay: `${index * 50}ms` }}
-            >
-              <div className="flex items-start gap-3">
-                {/* Status button */}
-                <button
-                  onClick={() => handleStatusCycle(task)}
-                  className={cn(
-                    'mt-0.5 p-1 rounded-full transition-colors',
-                    task.status === 'todo' && 'text-muted-foreground hover:text-foreground hover:bg-muted',
-                    task.status === 'doing' && 'text-status-doing bg-status-doing/20',
-                    task.status === 'done' && 'text-status-done bg-status-done/30'
-                  )}
-                  title={`Status: ${task.status}`}
-                >
-                  {statusIcons[task.status]}
-                </button>
-
-                {/* Task content */}
-                <div className="flex-1 min-w-0">
-                  <p className={cn(
-                    "text-sm font-medium leading-snug",
-                    task.status === 'done' ? 'line-through text-muted-foreground' : 'text-foreground'
-                  )}>
-                    {task.title}
-                  </p>
-                  {task.notes && (
-                    <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1">
-                      {task.notes}
-                    </p>
-                  )}
-
-                  {/* Tags and metadata */}
-                  <div className="flex items-center gap-2 mt-2 flex-wrap">
-                    {/* Priority pill */}
-                    <button
-                      onClick={() => handlePriorityCycle(task)}
-                      className={cn(
-                        'px-2 py-0.5 text-xs font-medium rounded-full border transition-colors',
-                        priorityConfig[task.priority].className
-                      )}
-                    >
-                      {priorityConfig[task.priority].label}
-                    </button>
-
-                    {/* Estimate */}
-                    {editingEstimate === task.id ? (
-                      <input
-                        type="number"
-                        value={tempEstimate}
-                        onChange={(e) => setTempEstimate(e.target.value)}
-                        onBlur={() => handleEstimateSubmit(task.id)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleEstimateSubmit(task.id)}
-                        className="w-16 px-2 py-0.5 text-xs bg-muted border border-border rounded"
-                        placeholder="min"
-                        autoFocus
-                      />
+          {filteredTasks.map((task, index) => {
+            const isTaskUpdating = isUpdating === task.id;
+            
+            return (
+              <li
+                key={task.id}
+                className={cn(
+                  "group p-3 rounded-lg hover:bg-muted/50 transition-all animate-fade-in",
+                  task.completion && "opacity-50"
+                )}
+                style={{ animationDelay: `${index * 50}ms` }}
+              >
+                <div className="flex items-start gap-3">
+                  {/* Completion checkbox */}
+                  <div className="mt-0.5">
+                    {isTaskUpdating ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
                     ) : (
-                      <button
-                        onClick={() => {
-                          setEditingEstimate(task.id);
-                          setTempEstimate(task.estimatedMinutes?.toString() || '');
+                      <Checkbox
+                        checked={task.completion}
+                        onCheckedChange={(checked) => {
+                          onCompletionChange(task.id, !!checked, task.rowNumber);
                         }}
-                        className="flex items-center gap-1 px-2 py-0.5 text-xs text-muted-foreground 
-                                   bg-muted/50 rounded-full hover:bg-muted transition-colors"
-                      >
-                        <Clock className="w-3 h-3" />
-                        {task.estimatedMinutes ? `${task.estimatedMinutes} דק׳` : 'הוסף זמן'}
-                      </button>
+                        className="data-[state=checked]:bg-status-done data-[state=checked]:border-status-done"
+                      />
+                    )}
+                  </div>
+
+                  {/* Task content */}
+                  <div className="flex-1 min-w-0">
+                    <p className={cn(
+                      "text-sm font-medium leading-snug",
+                      task.completion ? 'line-through text-muted-foreground' : 'text-foreground'
+                    )}>
+                      {task.title}
+                    </p>
+                    {task.clarifiedNextAction && (
+                      <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1">
+                        {task.clarifiedNextAction}
+                      </p>
+                    )}
+                    {task.notes && !task.clarifiedNextAction && (
+                      <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1">
+                        {task.notes}
+                      </p>
                     )}
 
-                    {/* Tags */}
-                    {task.tags?.slice(0, 2).map((tag) => (
-                      <span
-                        key={tag}
-                        className="px-2 py-0.5 text-xs text-muted-foreground bg-secondary/50 rounded-full"
+                    {/* Tags and metadata */}
+                    <div className="flex items-center gap-2 mt-2 flex-wrap">
+                      {/* Priority pill */}
+                      <button
+                        onClick={() => handlePriorityCycle(task)}
+                        className={cn(
+                          'px-2 py-0.5 text-xs font-medium rounded-full border transition-colors',
+                          priorityConfig[task.priority].className
+                        )}
                       >
-                        {tag}
-                      </span>
-                    ))}
+                        {priorityConfig[task.priority].label}
+                      </button>
+
+                      {/* Eisenhower Quadrant */}
+                      {task.eisenhowerQuadrant && (
+                        <span className="px-2 py-0.5 text-xs text-muted-foreground bg-secondary/50 rounded-full">
+                          {task.eisenhowerQuadrant}
+                        </span>
+                      )}
+
+                      {/* Estimate */}
+                      {editingEstimate === task.id ? (
+                        <input
+                          type="number"
+                          value={tempEstimate}
+                          onChange={(e) => setTempEstimate(e.target.value)}
+                          onBlur={() => handleEstimateSubmit(task.id)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleEstimateSubmit(task.id)}
+                          className="w-16 px-2 py-0.5 text-xs bg-muted border border-border rounded"
+                          placeholder="min"
+                          autoFocus
+                        />
+                      ) : (
+                        <button
+                          onClick={() => {
+                            setEditingEstimate(task.id);
+                            setTempEstimate(task.estimatedMinutes?.toString() || '');
+                          }}
+                          className="flex items-center gap-1 px-2 py-0.5 text-xs text-muted-foreground 
+                                     bg-muted/50 rounded-full hover:bg-muted transition-colors"
+                        >
+                          <Clock className="w-3 h-3" />
+                          {task.estimatedMinutes ? `${task.estimatedMinutes} דק׳` : 'הוסף זמן'}
+                        </button>
+                      )}
+
+                      {/* Tags */}
+                      {task.tags?.slice(0, 2).map((tag) => (
+                        <span
+                          key={tag}
+                          className="px-2 py-0.5 text-xs text-muted-foreground bg-secondary/50 rounded-full"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </li>
-          ))}
+              </li>
+            );
+          })}
         </ul>
 
         {filteredTasks.length === 0 && (

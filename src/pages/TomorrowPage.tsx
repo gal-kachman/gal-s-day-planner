@@ -5,7 +5,7 @@ import { TasksCard } from '@/components/TasksCard';
 import { EventsCard } from '@/components/EventsCard';
 import { ChatPanel } from '@/components/ChatPanel';
 import botanicalFooter from '@/assets/botanical-footer.png';
-import { Task, TaskStatus, TaskPriority, CalendarEvent, LibraryItem } from '@/types';
+import { Task, TaskPriority, CalendarEvent, LibraryItem } from '@/types';
 import { mockMicroseason, quickPrompts } from '@/data/mockData';
 import { useGoogleData } from '@/hooks/useGoogleData';
 import { useLibraryData } from '@/hooks/useLibraryData';
@@ -18,7 +18,7 @@ import { supabase } from '@/integrations/supabase/client';
 const GOOGLE_CONFIG = {
   calendarId: 'c27ecdqu2qtgmr51v7r3iggre4@group.calendar.google.com',
   spreadsheetId: '18VH_PFbgVD86BCLnin775mkELzGuj--kfLwz1xt9axs',
-  sheetRange: 'tasks!A:E',
+  sheetRange: 'tasks!A:K',
 };
 
 const LIBRARY_SPREADSHEET_ID = '18VH_PFbgVD86BCLnin775mkELzGuj--kfLwz1xt9axs';
@@ -63,26 +63,54 @@ export default function TomorrowPage() {
     fetchData(GOOGLE_CONFIG, 'all');
   };
 
-  const handleStatusChange = async (taskId: string, status: TaskStatus) => {
-    // Find task before updating state
-    const task = tasks.find(t => t.id === taskId);
+  const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null);
+
+  const handleCompletionChange = async (taskId: string, completed: boolean, rowNumber?: number) => {
+    if (!rowNumber) {
+      console.error('No row number for task:', taskId);
+      return;
+    }
+
+    setUpdatingTaskId(taskId);
     
+    // Optimistic UI update
     setTasks((prev) =>
-      prev.map((t) => (t.id === taskId ? { ...t, status } : t))
+      prev.map((t) => (t.id === taskId ? { ...t, completion: completed } : t))
     );
 
-    // Log completion to database when marked as done
-    if (status === 'done' && task) {
-      const { error } = await supabase.from('task_completions').insert({
-        task_title: task.title,
-        original_task_id: task.id,
-        notes: task.notes || null,
-        priority: task.priority || null,
-      });
+    try {
+      const timestamp = completed ? new Date().toISOString() : '';
       
+      const { error } = await supabase.functions.invoke('google-data', {
+        body: {
+          action: 'updateTaskCompletion',
+          spreadsheetId: GOOGLE_CONFIG.spreadsheetId,
+          sheetName: 'tasks',
+          rowNumber,
+          completed,
+          timestamp,
+        },
+      });
+
       if (error) {
-        console.error('Failed to log task completion:', error);
+        console.error('Failed to update task completion:', error);
+        toast({
+          title: 'שגיאה בעדכון המשימה',
+          description: 'לא הצלחנו לעדכן את הסטטוס בגיליון',
+          variant: 'destructive',
+        });
+        // Revert on error
+        setTasks((prev) =>
+          prev.map((t) => (t.id === taskId ? { ...t, completion: !completed } : t))
+        );
+      } else if (completed) {
+        // Remove completed task from list after brief delay
+        setTimeout(() => {
+          setTasks((prev) => prev.filter((t) => t.id !== taskId));
+        }, 800);
       }
+    } finally {
+      setUpdatingTaskId(null);
     }
   };
 
@@ -101,8 +129,9 @@ export default function TomorrowPage() {
   const handleAddTask = (title: string) => {
     const newTask: Task = {
       id: Date.now().toString(),
+      taskId: `new-${Date.now()}`,
       title,
-      status: 'todo',
+      completion: false,
       priority: 'medium',
       createdAt: new Date().toISOString(),
     };
@@ -142,10 +171,11 @@ export default function TomorrowPage() {
             <div className="min-h-[400px]">
               <TasksCard
                 tasks={tasks}
-                onStatusChange={handleStatusChange}
+                onCompletionChange={handleCompletionChange}
                 onPriorityChange={handlePriorityChange}
                 onEstimateChange={handleEstimateChange}
                 onAddTask={handleAddTask}
+                isUpdating={updatingTaskId || undefined}
               />
             </div>
 

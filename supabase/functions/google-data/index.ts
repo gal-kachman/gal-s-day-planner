@@ -10,7 +10,7 @@ const corsHeaders = {
 
 // Input validation schema
 const GoogleDataSchema = z.object({
-  action: z.enum(['calendar', 'tasks', 'library', 'updateTask', 'all']),
+  action: z.enum(['calendar', 'tasks', 'library', 'updateTask', 'updateTaskCompletion', 'all']),
   calendarId: z.string().max(200).optional(),
   spreadsheetId: z.string().max(200).optional(),
   sheetRange: z.string().max(100).optional(),
@@ -18,6 +18,8 @@ const GoogleDataSchema = z.object({
   column: z.string().regex(/^[A-Z]+$/).optional(),
   rowNumber: z.number().int().positive().max(10000).optional(),
   value: z.string().max(1000).optional(),
+  completed: z.boolean().optional(),
+  timestamp: z.string().optional(),
 });
 
 interface ServiceAccountKey {
@@ -195,7 +197,9 @@ async function getFirstSheetName(accessToken: string, spreadsheetId: string): Pr
   return firstSheet || 'Sheet1';
 }
 
-// Fetch tasks from Google Sheet (now includes column I for reason_short)
+// Fetch tasks from Google Sheet (columns A-K)
+// A=taskId, B=title, C=due_date, D=clarified_next_action, E=eisenhower_quadrant, 
+// F=priority_rank, G=delegate_to, H=reason_short, I=Creation Timestamp, J=completion, K=completion Timestamp
 async function fetchSheetTasks(accessToken: string, spreadsheetId: string, range: string): Promise<any[]> {
   // If range starts with "Sheet1", try to get actual sheet name
   let actualRange = range;
@@ -226,45 +230,43 @@ async function fetchSheetTasks(accessToken: string, spreadsheetId: string, range
   
   console.log(`Found ${rows.length} rows in sheet`);
   
-  // Skip header row if present and map to tasks
-  // Columns: A=Index, B=Notes/Title, C=Status, D=Quadrant, E=Priority, F=?, G=?, H=?, I=reason_short
   if (rows.length <= 1) {
     return [];
   }
   
-  return rows.slice(1).map((row: string[], index: number) => {
-    const statusRaw = row[2]?.toLowerCase() || '';
-    let status: 'todo' | 'doing' | 'done' = 'todo';
-    if (statusRaw === 'done' || statusRaw === 'completed') {
-      status = 'done';
-    } else if (statusRaw === 'doing' || statusRaw === 'in progress') {
-      status = 'doing';
-    }
-    
-    const priorityRaw = row[4]?.toLowerCase() || 'medium';
-    let priority: 'low' | 'medium' | 'high' | 'urgent' = 'medium';
-    if (priorityRaw === 'high' || priorityRaw === 'urgent') {
-      priority = 'high';
-    } else if (priorityRaw === 'low') {
-      priority = 'low';
-    }
-    
-    const rowNumber = index + 2; // +2 because: +1 for 0-indexed, +1 for header row
-    
-    return {
-      id: `sheet-${rowNumber}`,
-      title: row[1] || 'Untitled Task', // Notes column as title
-      notes: undefined,
-      status,
-      priority,
-      estimatedMinutes: undefined,
-      dueDate: row[3] || undefined, // Quadrant column
-      tags: row[4] ? [row[4]] : undefined, // Priority as tag
-      createdAt: new Date().toISOString(),
-      reasonShort: row[8] || undefined, // Column I = index 8
-      rowNumber,
-    };
-  });
+  // Filter out completed tasks and map to Task format
+  return rows.slice(1)
+    .map((row: string[], index: number) => {
+      const rowNumber = index + 2; // +2 because: +1 for 0-indexed, +1 for header row
+      const completionValue = row[9]?.toUpperCase() || '';
+      const isCompleted = completionValue === 'TRUE' || completionValue === '✓' || completionValue === 'YES';
+      
+      // Parse priority rank (column F) to priority level
+      const priorityRank = parseInt(row[5] || '0', 10);
+      let priority: 'low' | 'medium' | 'high' | 'urgent' = 'medium';
+      if (priorityRank >= 4) priority = 'urgent';
+      else if (priorityRank === 3) priority = 'high';
+      else if (priorityRank === 2) priority = 'medium';
+      else if (priorityRank <= 1) priority = 'low';
+      
+      return {
+        id: `sheet-${rowNumber}`,
+        taskId: row[0] || '', // Column A
+        title: row[1] || 'Untitled Task', // Column B
+        dueDate: row[2] || undefined, // Column C
+        clarifiedNextAction: row[3] || undefined, // Column D
+        eisenhowerQuadrant: row[4] || undefined, // Column E
+        priorityRank: priorityRank || undefined, // Column F
+        delegateTo: row[6] || undefined, // Column G
+        reasonShort: row[7] || undefined, // Column H
+        createdAt: row[8] || undefined, // Column I
+        completion: isCompleted, // Column J
+        completionTimestamp: row[10] || undefined, // Column K
+        priority,
+        rowNumber,
+      };
+    })
+    .filter((task: any) => !task.completion); // Only return uncompleted tasks
 }
 
 // Fetch library items from Google Sheet (culture tab)
@@ -344,6 +346,40 @@ async function updateSheetCell(
   console.log(`Successfully updated cell ${range}`);
 }
 
+// Update task completion checkbox (column J) and timestamp (column K)
+async function updateTaskCompletion(
+  accessToken: string,
+  spreadsheetId: string,
+  sheetName: string,
+  rowNumber: number,
+  completed: boolean,
+  timestamp: string
+): Promise<void> {
+  const range = `${sheetName}!J${rowNumber}:K${rowNumber}`;
+  console.log(`Updating completion for row ${rowNumber}: completed=${completed}, timestamp=${timestamp}`);
+  
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`;
+  
+  const response = await fetch(url, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      values: [[completed ? 'TRUE' : 'FALSE', timestamp]],
+    }),
+  });
+  
+  if (!response.ok) {
+    const error = await response.text();
+    console.error('Sheets API update error:', error);
+    throw new Error(`Failed to update task completion: ${error}`);
+  }
+  
+  console.log(`Successfully updated completion for row ${rowNumber}`);
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -376,10 +412,10 @@ serve(async (req) => {
       );
     }
 
-    const { action, calendarId, spreadsheetId, sheetRange, sheetName, column, rowNumber, value } = parseResult.data;
+    const { action, calendarId, spreadsheetId, sheetRange, sheetName, column, rowNumber, value, completed, timestamp } = parseResult.data;
     
     // Determine scopes based on action
-    const needsWrite = action === 'updateTask';
+    const needsWrite = action === 'updateTask' || action === 'updateTaskCompletion';
     const scopes = needsWrite
       ? ['https://www.googleapis.com/auth/spreadsheets']
       : [
@@ -410,7 +446,7 @@ serve(async (req) => {
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-      result.tasks = await fetchSheetTasks(accessToken, spreadsheetId, sheetRange || 'Sheet1!A:I');
+      result.tasks = await fetchSheetTasks(accessToken, spreadsheetId, sheetRange || 'tasks!A:K');
     }
 
     if (action === 'library') {
@@ -433,6 +469,18 @@ serve(async (req) => {
       await updateSheetCell(accessToken, spreadsheetId, sheetName, column, rowNumber, value);
       result.success = true;
       result.message = `Updated ${sheetName}!${column}${rowNumber}`;
+    }
+
+    if (action === 'updateTaskCompletion') {
+      if (!spreadsheetId || !sheetName || !rowNumber || completed === undefined) {
+        return new Response(
+          JSON.stringify({ error: 'spreadsheetId, sheetName, rowNumber, and completed are required for updateTaskCompletion action' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      await updateTaskCompletion(accessToken, spreadsheetId, sheetName, rowNumber, completed, timestamp || '');
+      result.success = true;
+      result.message = `Updated completion for row ${rowNumber}`;
     }
 
     console.log('Returning data successfully');
