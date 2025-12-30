@@ -266,7 +266,7 @@ async function fetchSheetTasks(accessToken: string, spreadsheetId: string, range
         rowNumber,
       };
     })
-    .filter((task: any) => !task.completion); // Only return uncompleted tasks
+    .filter((task: any) => !task.completion && task.title && task.title !== 'Untitled Task'); // Only return uncompleted tasks with titles
 }
 
 // Fetch library items from Google Sheet (culture tab)
