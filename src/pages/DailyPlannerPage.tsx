@@ -4,9 +4,10 @@ import { useSearchParams } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
-import { Check, Calendar, ListTodo, Coffee, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Check, Calendar, ListTodo, Coffee, ChevronLeft, ChevronRight, Table2, LayoutGrid } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import plannerBg from '@/assets/planner-bg-minimal.jpeg';
 
 interface ScheduledItem {
@@ -61,6 +62,7 @@ export default function DailyPlannerPage() {
   const [scheduledDay, setScheduledDay] = useState<ScheduledDay | null>(null);
   const [items, setItems] = useState<ScheduledItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'timeline' | 'table'>('table');
 
   // Fetch schedule - show selected date's plan, or fall back to most recent plan
   useEffect(() => {
@@ -237,39 +239,65 @@ export default function DailyPlannerPage() {
           </div>
         ) : (
           /* Show scheduled items */
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-5xl mx-auto">
             {scheduledDay.conversation_summary && (
-              <p className="text-sm text-stone-600 text-center mb-6 italic">
+              <p className="text-sm text-stone-600 text-center mb-4 italic">
                 {scheduledDay.conversation_summary}
               </p>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* Timeline view */}
-              <div className="space-y-1">
-                <h2 className="text-sm font-medium text-stone-600 mb-3 tracking-wider uppercase text-center">
-                  לוח זמנים
-                </h2>
-                <div className="space-y-2">
-                  {timeSlots.map((time) => {
-                    const item = getItemForTimeSlot(time);
-                    const Icon = item ? itemTypeIcons[item.item_type] : null;
-                    
-                    return (
-                      <div key={time} className="flex items-center gap-3 group">
-                        <span className="text-xs text-stone-400 w-10 font-mono">{time}</span>
-                        {item ? (
-                          <div
-                            className={cn(
-                              'flex-1 flex items-center gap-2 px-3 py-2 rounded-lg border transition-all cursor-pointer',
-                              itemTypeColors[item.item_type],
-                              item.is_done && 'opacity-50'
-                            )}
-                            onClick={() => toggleItemDone(item.id, item.is_done)}
-                          >
+            {/* View mode toggle */}
+            <div className="flex justify-center gap-2 mb-6">
+              <Button
+                variant={viewMode === 'table' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('table')}
+                className="gap-2"
+              >
+                <Table2 className="w-4 h-4" />
+                טבלה
+              </Button>
+              <Button
+                variant={viewMode === 'timeline' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('timeline')}
+                className="gap-2"
+              >
+                <LayoutGrid className="w-4 h-4" />
+                לוח זמנים
+              </Button>
+            </div>
+
+            {viewMode === 'table' ? (
+              /* Table view */
+              <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg overflow-hidden border border-stone-200">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-stone-100/80">
+                      <TableHead className="text-right font-serif text-stone-700 w-12"></TableHead>
+                      <TableHead className="text-right font-serif text-stone-700">כותרת</TableHead>
+                      <TableHead className="text-right font-serif text-stone-700 w-36">שעות</TableHead>
+                      <TableHead className="text-right font-serif text-stone-700">הערות</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {items.map((item) => {
+                      const Icon = itemTypeIcons[item.item_type];
+                      const timeRange = `${item.start_time.substring(0, 5)}${item.end_time ? ` - ${item.end_time.substring(0, 5)}` : ''}`;
+                      
+                      return (
+                        <TableRow 
+                          key={item.id}
+                          className={cn(
+                            'cursor-pointer hover:bg-stone-50 transition-colors',
+                            item.is_done && 'bg-stone-100/50'
+                          )}
+                          onClick={() => toggleItemDone(item.id, item.is_done)}
+                        >
+                          <TableCell className="text-center">
                             <button
                               className={cn(
-                                'w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-colors',
+                                'w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors mx-auto',
                                 item.is_done 
                                   ? 'bg-stone-600 border-stone-600' 
                                   : 'border-stone-400 hover:border-stone-600'
@@ -277,87 +305,162 @@ export default function DailyPlannerPage() {
                             >
                               {item.is_done && <Check className="w-3 h-3 text-white" />}
                             </button>
-                            {Icon && <Icon className="w-4 h-4 flex-shrink-0" />}
-                            <span className={cn(
-                              'text-sm flex-1',
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Icon className={cn(
+                                'w-4 h-4 flex-shrink-0',
+                                item.item_type === 'task' && 'text-primary',
+                                item.item_type === 'event' && 'text-secondary-foreground',
+                                item.item_type === 'break' && 'text-muted-foreground'
+                              )} />
+                              <span className={cn(
+                                'font-medium text-stone-800',
+                                item.is_done && 'line-through opacity-60'
+                              )}>
+                                {item.title}
+                              </span>
+                              {item.priority && (
+                                <span className={cn(
+                                  'text-xs px-2 py-0.5 rounded-full',
+                                  item.priority === 'urgent' && 'bg-red-100 text-red-700',
+                                  item.priority === 'high' && 'bg-orange-100 text-orange-700',
+                                  item.priority === 'medium' && 'bg-yellow-100 text-yellow-700',
+                                  item.priority === 'low' && 'bg-green-100 text-green-700'
+                                )}>
+                                  {item.priority}
+                                </span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="font-mono text-sm text-stone-600">
+                            {timeRange}
+                          </TableCell>
+                          <TableCell className="text-stone-500 text-sm">
+                            {item.notes || item.location || '—'}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            ) : (
+              /* Timeline view */
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-1">
+                  <h2 className="text-sm font-medium text-stone-600 mb-3 tracking-wider uppercase text-center">
+                    לוח זמנים
+                  </h2>
+                  <div className="space-y-2">
+                    {timeSlots.map((time) => {
+                      const item = getItemForTimeSlot(time);
+                      const Icon = item ? itemTypeIcons[item.item_type] : null;
+                      
+                      return (
+                        <div key={time} className="flex items-center gap-3 group">
+                          <span className="text-xs text-stone-400 w-10 font-mono">{time}</span>
+                          {item ? (
+                            <div
+                              className={cn(
+                                'flex-1 flex items-center gap-2 px-3 py-2 rounded-lg border transition-all cursor-pointer',
+                                itemTypeColors[item.item_type],
+                                item.is_done && 'opacity-50'
+                              )}
+                              onClick={() => toggleItemDone(item.id, item.is_done)}
+                            >
+                              <button
+                                className={cn(
+                                  'w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-colors',
+                                  item.is_done 
+                                    ? 'bg-stone-600 border-stone-600' 
+                                    : 'border-stone-400 hover:border-stone-600'
+                                )}
+                              >
+                                {item.is_done && <Check className="w-3 h-3 text-white" />}
+                              </button>
+                              {Icon && <Icon className="w-4 h-4 flex-shrink-0" />}
+                              <span className={cn(
+                                'text-sm flex-1',
+                                item.is_done && 'line-through'
+                              )}>
+                                {item.title}
+                              </span>
+                              {item.end_time && (
+                                <span className="text-xs opacity-60">
+                                  עד {item.end_time.substring(0, 5)}
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="flex-1 border-b border-stone-300/30 py-2" />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Items list */}
+                <div>
+                  <h2 className="text-sm font-medium text-stone-600 mb-3 tracking-wider uppercase text-center">
+                    רשימת פריטים
+                  </h2>
+                  <div className="space-y-2">
+                    {items.map((item) => {
+                      const Icon = itemTypeIcons[item.item_type];
+                      return (
+                        <div
+                          key={item.id}
+                          className={cn(
+                            'flex items-center gap-3 px-4 py-3 rounded-lg border transition-all cursor-pointer',
+                            itemTypeColors[item.item_type],
+                            item.is_done && 'opacity-50'
+                          )}
+                          onClick={() => toggleItemDone(item.id, item.is_done)}
+                        >
+                          <button
+                            className={cn(
+                              'w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-colors',
+                              item.is_done 
+                                ? 'bg-stone-600 border-stone-600' 
+                                : 'border-stone-400 hover:border-stone-600'
+                            )}
+                          >
+                            {item.is_done && <Check className="w-3 h-3 text-white" />}
+                          </button>
+                          <Icon className="w-4 h-4 flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className={cn(
+                              'text-sm font-medium truncate',
                               item.is_done && 'line-through'
                             )}>
                               {item.title}
-                            </span>
-                            {item.end_time && (
-                              <span className="text-xs opacity-60">
-                                עד {item.end_time.substring(0, 5)}
-                              </span>
-                            )}
+                            </p>
+                            <p className="text-xs opacity-70">
+                              {item.start_time.substring(0, 5)}
+                              {item.end_time && ` - ${item.end_time.substring(0, 5)}`}
+                              {item.location && ` · ${item.location}`}
+                            </p>
                           </div>
-                        ) : (
-                          <div className="flex-1 border-b border-stone-300/30 py-2" />
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Items list */}
-              <div>
-                <h2 className="text-sm font-medium text-stone-600 mb-3 tracking-wider uppercase text-center">
-                  רשימת פריטים
-                </h2>
-                <div className="space-y-2">
-                  {items.map((item) => {
-                    const Icon = itemTypeIcons[item.item_type];
-                    return (
-                      <div
-                        key={item.id}
-                        className={cn(
-                          'flex items-center gap-3 px-4 py-3 rounded-lg border transition-all cursor-pointer',
-                          itemTypeColors[item.item_type],
-                          item.is_done && 'opacity-50'
-                        )}
-                        onClick={() => toggleItemDone(item.id, item.is_done)}
-                      >
-                        <button
-                          className={cn(
-                            'w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-colors',
-                            item.is_done 
-                              ? 'bg-stone-600 border-stone-600' 
-                              : 'border-stone-400 hover:border-stone-600'
+                          {item.priority && (
+                            <span className={cn(
+                              'text-xs px-2 py-0.5 rounded-full',
+                              item.priority === 'urgent' && 'bg-red-100 text-red-700',
+                              item.priority === 'high' && 'bg-orange-100 text-orange-700',
+                              item.priority === 'medium' && 'bg-yellow-100 text-yellow-700',
+                              item.priority === 'low' && 'bg-green-100 text-green-700'
+                            )}>
+                              {item.priority}
+                            </span>
                           )}
-                        >
-                          {item.is_done && <Check className="w-3 h-3 text-white" />}
-                        </button>
-                        <Icon className="w-4 h-4 flex-shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <p className={cn(
-                            'text-sm font-medium truncate',
-                            item.is_done && 'line-through'
-                          )}>
-                            {item.title}
-                          </p>
-                          <p className="text-xs opacity-70">
-                            {item.start_time.substring(0, 5)}
-                            {item.end_time && ` - ${item.end_time.substring(0, 5)}`}
-                            {item.location && ` · ${item.location}`}
-                          </p>
                         </div>
-                        {item.priority && (
-                          <span className={cn(
-                            'text-xs px-2 py-0.5 rounded-full',
-                            item.priority === 'urgent' && 'bg-red-100 text-red-700',
-                            item.priority === 'high' && 'bg-orange-100 text-orange-700',
-                            item.priority === 'medium' && 'bg-yellow-100 text-yellow-700',
-                            item.priority === 'low' && 'bg-green-100 text-green-700'
-                          )}>
-                            {item.priority}
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         )}
       </div>
